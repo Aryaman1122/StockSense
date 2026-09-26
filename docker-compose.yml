@@ -1,0 +1,10 @@
+# Local dev/test Postgres. Production uses Neon: only DATABASE_URL changes.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inventory
+    ports:
+      - "5433:5432"

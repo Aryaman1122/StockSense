@@ -1,4 +1,8 @@
 fastapi
-uvicorn
+uvicorn[standard]
+psycopg[binary,pool]
+argon2-cffi
+pyjwt
 httpx
+python-dotenv
 pytest
