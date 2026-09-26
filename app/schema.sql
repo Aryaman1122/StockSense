@@ -4,8 +4,9 @@ DO $$ BEGIN CREATE TYPE user_role AS ENUM ('staff', 'manager');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE op_type AS ENUM ('receive', 'transfer', 'delivery', 'adjustment');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE op_status AS ENUM ('draft', 'waiting', 'ready', 'done');
+DO $$ BEGIN CREATE TYPE op_status AS ENUM ('draft', 'waiting', 'ready', 'done', 'canceled');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TYPE op_status ADD VALUE IF NOT EXISTS 'canceled';  -- databases created before cancel existed
 
 CREATE TABLE IF NOT EXISTS users (
     id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -44,8 +45,12 @@ CREATE TABLE IF NOT EXISTS products (
     id       bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     sku      text NOT NULL UNIQUE,
     name     text NOT NULL,
-    category text NOT NULL
+    category text NOT NULL,
+    uom      text NOT NULL DEFAULT 'Units',
+    min_qty  numeric(14, 3) NOT NULL DEFAULT 0 CHECK (min_qty >= 0)  -- reordering rule: alert at or below this
 );
+ALTER TABLE products ADD COLUMN IF NOT EXISTS uom text NOT NULL DEFAULT 'Units';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS min_qty numeric(14, 3) NOT NULL DEFAULT 0 CHECK (min_qty >= 0);
 CREATE INDEX IF NOT EXISTS products_category_idx ON products (category);
 
 -- Derived on-hand stock. PK doubles as the (product_id, location_id) lookup index.
@@ -62,11 +67,12 @@ CREATE TABLE IF NOT EXISTS operations (
     type               op_type NOT NULL,
     status             op_status NOT NULL DEFAULT 'draft',
     product_id         bigint NOT NULL REFERENCES products(id),
-    qty                numeric(14, 3) NOT NULL CHECK (qty > 0),
+    qty                numeric(14, 3) NOT NULL,  -- adjustment: counted qty (0 allowed); else qty moved
     source_location_id bigint REFERENCES locations(id),
     dest_location_id   bigint REFERENCES locations(id),
     warehouse_id       bigint NOT NULL REFERENCES warehouses(id),
     scheduled_date     date NOT NULL DEFAULT current_date,
+    partner            text,  -- supplier (receipt) or customer (delivery)
     note               text,
     created_by         bigint NOT NULL REFERENCES users(id),
     created_at         timestamptz NOT NULL DEFAULT now(),
@@ -75,8 +81,13 @@ CREATE TABLE IF NOT EXISTS operations (
         OR (type IN ('delivery', 'adjustment') AND source_location_id IS NOT NULL AND dest_location_id IS NULL)
         OR (type = 'transfer' AND source_location_id IS NOT NULL AND dest_location_id IS NOT NULL
             AND source_location_id <> dest_location_id)
-    )
+    ),
+    CONSTRAINT operation_qty CHECK (qty > 0 OR (type = 'adjustment' AND qty >= 0))
 );
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS partner text;
+ALTER TABLE operations DROP CONSTRAINT IF EXISTS operations_qty_check;  -- old qty > 0, blocked counts of 0
+DO $$ BEGIN ALTER TABLE operations ADD CONSTRAINT operation_qty CHECK (qty > 0 OR (type = 'adjustment' AND qty >= 0));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS operations_status_date_idx ON operations (status, scheduled_date);
 CREATE INDEX IF NOT EXISTS operations_warehouse_idx ON operations (warehouse_id);
 CREATE INDEX IF NOT EXISTS operations_type_status_idx ON operations (type, status);

@@ -38,7 +38,7 @@ The schema is applied idempotently on boot, so there's no separate migration ste
 |---|---|
 | `ledger` | Append-only. One row per stock movement, written when an operation reaches `done`. A database trigger rejects `UPDATE`, `DELETE` and `TRUNCATE`. |
 | `quants` | Current on-hand quantity per product and location. Every read uses this table, so a lookup is O(1). It's updated **in the same transaction** as the ledger insert, after `SELECT … FOR UPDATE` locks the row. `CHECK (qty >= 0)` is a second line of defence. |
-| `operations` / `operation_transitions` | The state machine, draft → waiting → ready → done. It only moves forward, one step at a time. Every move records the actor and a timestamp, and the transitions table is append-only. Operations can never be deleted. |
+| `operations` / `operation_transitions` | The state machine, draft → waiting → ready → done, or any open state → canceled. It only moves forward, one step at a time. Every move records the actor and a timestamp, and the transitions table is append-only. Operations can never be deleted. |
 | `idempotency_keys` | `POST /operations/{id}/transition` **requires** an `Idempotency-Key` header. A retry or double-click with the same key replays the first response and never runs the transition twice. |
 
 The spec's worked example is an acceptance test ([tests/test_worked_example.py](tests/test_worked_example.py)):
@@ -46,7 +46,7 @@ The spec's worked example is an acceptance test ([tests/test_worked_example.py](
 1. Receive +100 steel → 100
 2. Transfer to the production rack → 0 / 100
 3. Deliver −20 → 80
-4. Adjust −3 (damaged) → 77
+4. Count 77 (3 damaged) → the adjustment posts −3 → 77
 
 After each step, the test also checks that `quants` equals `SUM(ledger)`. [tests/test_concurrency.py](tests/test_concurrency.py) runs two validations at the same moment against the last unit in stock. Exactly one succeeds. If you remove the row lock, the test fails.
 
@@ -76,6 +76,19 @@ After each step, the test also checks that `quants` equals `SUM(ledger)`. [tests
   - signup: 10 per hour per IP
 - Writes that carry cookies are rejected if they come from an origin outside `CORS_ORIGINS`. The WebSocket handshake gets the same check.
 - Every secret is a server-side environment variable. This service has no client bundle.
+
+## Inventory features
+
+- **Adjustments are physical counts.** The adjustment's `qty` is the counted quantity (0 allowed). When the adjustment is validated, it posts `counted − on_hand` to the ledger, with on_hand read under the row lock. A count that matches the recorded stock posts nothing.
+- **Products** have `uom` and `min_qty`, which is the reordering rule. `POST /products` accepts `initial_qty` + `initial_location_id` and posts the initial stock as a done adjustment, so it appears in the ledger. `PATCH /products/{id}` updates products and is manager-only.
+- **Receipts and deliveries** take an optional `partner` (the supplier or the customer).
+- **`GET /dashboard?warehouse_id=&category=`** returns:
+  - products in stock
+  - low-stock count (`0 < on_hand ≤ min_qty`)
+  - out-of-stock count
+  - pending receipts, deliveries and transfers (not done or canceled)
+  - `alerts`, the list of every low or out-of-stock product
+- **Filters.** `/operations` takes `type`, `status`, `warehouse_id`, `location_id` (source or destination), `category` and `q`. `/quants` takes `warehouse_id`, `location_id`, `product_id`, `category` and `q`. `/products` takes `category` and `q`. `q` is a case-insensitive search on SKU or name.
 
 ## Realtime
 

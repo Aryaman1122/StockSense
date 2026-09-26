@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 Email = Annotated[
     str,
@@ -12,8 +12,9 @@ Email = Annotated[
 Password = Annotated[str, StringConstraints(min_length=8, max_length=128)]
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 OpType = Literal["receive", "transfer", "delivery", "adjustment"]
-OpStatus = Literal["draft", "waiting", "ready", "done"]
+OpStatus = Literal["draft", "waiting", "ready", "done", "canceled"]
 Role = Literal["staff", "manager"]
+Qty = Annotated[Decimal, Field(ge=0, max_digits=14, decimal_places=3)]
 
 
 # --- auth ---
@@ -72,10 +73,32 @@ class LocationOut(BaseModel):
     name: str
 
 
+Sku = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+Uom = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20)]
+
+
 class ProductIn(BaseModel):
-    sku: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+    sku: Sku
     name: Name
     category: Name
+    uom: Uom = "Units"
+    min_qty: Qty = Decimal(0)
+    initial_qty: Qty = Decimal(0)
+    initial_location_id: int | None = None
+
+    @model_validator(mode="after")
+    def _initial_stock_needs_location(self):
+        if self.initial_qty > 0 and self.initial_location_id is None:
+            raise ValueError("initial_location_id is required when initial_qty > 0")
+        return self
+
+
+class ProductPatch(BaseModel):
+    sku: Sku | None = None
+    name: Name | None = None
+    category: Name | None = None
+    uom: Uom | None = None
+    min_qty: Qty | None = None
 
 
 class ProductOut(BaseModel):
@@ -83,6 +106,8 @@ class ProductOut(BaseModel):
     sku: str
     name: str
     category: str
+    uom: str
+    min_qty: float
 
 
 class QuantOut(BaseModel):
@@ -90,6 +115,7 @@ class QuantOut(BaseModel):
     sku: str
     product_name: str
     category: str
+    uom: str
     location_id: int
     location_name: str
     warehouse_id: int
@@ -101,11 +127,18 @@ class QuantOut(BaseModel):
 class OperationIn(BaseModel):
     type: OpType
     product_id: int
-    qty: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+    qty: Qty  # adjustment: the physically counted quantity (0 allowed); otherwise the quantity moved
     source_location_id: int | None = None
     dest_location_id: int | None = None
     scheduled_date: date | None = None
+    partner: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None = None
     note: Annotated[str, StringConstraints(max_length=500)] | None = None
+
+    @model_validator(mode="after")
+    def _qty_positive_unless_count(self):
+        if self.qty == 0 and self.type != "adjustment":
+            raise ValueError("qty must be greater than 0")
+        return self
 
 
 class OperationOut(BaseModel):
@@ -118,6 +151,7 @@ class OperationOut(BaseModel):
     dest_location_id: int | None
     warehouse_id: int
     scheduled_date: date
+    partner: str | None
     note: str | None
     created_by: int
     created_at: datetime
@@ -148,3 +182,24 @@ class LedgerOut(BaseModel):
 class OperationDetail(OperationOut):
     transitions: list[TransitionOut]
     ledger: list[LedgerOut]
+
+
+# --- dashboard ---
+
+class StockAlert(BaseModel):
+    product_id: int
+    sku: str
+    name: str
+    uom: str
+    on_hand: float
+    min_qty: float
+
+
+class DashboardOut(BaseModel):
+    products_in_stock: int
+    low_stock: int      # 0 < on_hand <= min_qty
+    out_of_stock: int   # on_hand == 0
+    pending_receipts: int
+    pending_deliveries: int
+    scheduled_transfers: int
+    alerts: list[StockAlert]  # every low or out-of-stock product

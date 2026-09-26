@@ -25,9 +25,10 @@ def seed() -> None:
         stock = ins("INSERT INTO locations (warehouse_id, name) VALUES (%s, %s)", main_wh, "WH/Stock")
         rack = ins("INSERT INTO locations (warehouse_id, name) VALUES (%s, %s)", main_wh, "WH/Production Rack")
         ins("INSERT INTO locations (warehouse_id, name) VALUES (%s, %s)", second_wh, "WH2/Stock")
-        steel = ins("INSERT INTO products (sku, name, category) VALUES (%s, %s, %s)", "STEEL-001", "Steel Rod (kg)", "Raw Material")
-        bolts = ins("INSERT INTO products (sku, name, category) VALUES (%s, %s, %s)", "BOLT-M8", "M8 Bolt", "Hardware")
-        ins("INSERT INTO products (sku, name, category) VALUES (%s, %s, %s)", "PAINT-RED", "Red Paint (L)", "Consumable")
+        product = "INSERT INTO products (sku, name, category, uom, min_qty) VALUES (%s, %s, %s, %s, %s)"
+        steel = ins(product, "STEEL-001", "Steel Rod", "Raw Material", "kg", 100)  # 77 on hand -> low-stock alert
+        bolts = ins(product, "BOLT-M8", "M8 Bolt", "Hardware", "Units", 50)
+        ins(product, "PAINT-RED", "Red Paint", "Consumable", "L", 10)  # never received -> out of stock
 
     actor = {"id": manager, "role": "manager"}
 
@@ -44,12 +45,12 @@ def seed() -> None:
     op("receive", steel, 100, "done", dest_location_id=stock)
     op("transfer", steel, 100, "done", source_location_id=stock, dest_location_id=rack)
     op("delivery", steel, 20, "done", source_location_id=rack)
-    op("adjustment", steel, 3, "done", source_location_id=rack)
+    op("adjustment", steel, 77, "done", source_location_id=rack)  # counted 77: 3 damaged
     # Something in every kanban column.
     op("receive", bolts, 500, "done", dest_location_id=stock)
     op("delivery", bolts, 50, "ready", source_location_id=stock)
     op("transfer", bolts, 100, "waiting", source_location_id=stock, dest_location_id=rack)
-    op("receive", steel, 250, "draft", dest_location_id=stock)
+    op("receive", steel, 250, "draft", dest_location_id=stock, partner="Acme Steel")
     print(f"Seeded. Logins: manager / {MANAGER_PW}   staff / {STAFF_PW}")
 
 

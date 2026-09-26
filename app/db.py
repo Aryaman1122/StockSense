@@ -48,9 +48,12 @@ def tx():
         yield cur
 
 
-def where(filters: dict[str, object]) -> tuple[str, list]:
-    """Equality WHERE from the non-None filters. Keys are column names from code, never user input."""
-    items = [(col, val) for col, val in filters.items() if val is not None]
-    if not items:
+def where(filters: dict[str, object], *extra) -> tuple[str, list]:
+    """Equality WHERE from the non-None filters, ANDed with any truthy (sql, params) extras.
+
+    Keys and extra SQL come from code, never user input; values are always bound parameters.
+    """
+    conds = [(f"{col} = %s", [val]) for col, val in filters.items() if val is not None] + [e for e in extra if e]
+    if not conds:
         return "", []
-    return "WHERE " + " AND ".join(f"{col} = %s" for col, _ in items), [val for _, val in items]
+    return "WHERE " + " AND ".join(sql for sql, _ in conds), [v for _, vals in conds for v in vals]

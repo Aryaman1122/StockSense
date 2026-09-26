@@ -1,4 +1,4 @@
-"""The spec's worked example as one continuous scenario: +100 steel, transfer, -20 delivered, -3 damaged."""
+"""The spec's worked example as one continuous scenario: +100 steel, transfer, -20 delivered, 3 damaged (count 77)."""
 import uuid
 
 import psycopg
@@ -34,7 +34,7 @@ def test_worked_example(world):
     assert quant(steel, rack) == 80
     assert_quants_match_ledger()
 
-    validate(m, type="adjustment", product_id=steel, qty=3, source_location_id=rack, note="damaged")
+    validate(m, type="adjustment", product_id=steel, qty=77, source_location_id=rack, note="3 damaged")  # counted 77
     assert quant(steel, rack) == 77
     assert_quants_match_ledger()
 
@@ -78,3 +78,19 @@ def test_staff_cannot_adjust(world):
         create_operation(OperationIn(type="adjustment", product_id=world["steel"], qty=1,
                                      source_location_id=world["stock"]), world["staff"])
     assert e.value.status == 403
+
+
+def test_count_adjustment_can_add_stock_and_cancel_never_posts(world):
+    m, steel, stock = world["manager"], world["steel"], world["stock"]
+    validate(m, type="adjustment", product_id=steel, qty=12, source_location_id=stock)  # found 12 on the shelf
+    assert quant(steel, stock) == 12
+    validate(m, type="adjustment", product_id=steel, qty=0, source_location_id=stock)  # all gone
+    assert quant(steel, stock) == 0
+
+    op, _ = create_operation(OperationIn(type="receive", product_id=steel, qty=5, dest_location_id=stock), m)
+    transition_operation(op.id, "draft", "canceled", m, None)
+    with pytest.raises(DomainError) as e:
+        transition_operation(op.id, "canceled", "done", m, None)
+    assert e.value.code == "illegal_transition"
+    assert quant(steel, stock) == 0
+    assert_quants_match_ledger()

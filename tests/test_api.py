@@ -126,3 +126,41 @@ def test_ws_rejects_anonymous(client):
 
     with pytest.raises(WebSocketDisconnect), client.websocket_connect("/ws") as ws:
         ws.receive_json()
+
+
+def test_products_dashboard_and_filters(client, world):
+    login(client, "boss", "manager-pass-1")
+    r = client.post("/products", json={"sku": "CHAIR-1", "name": "Chair", "category": "Furniture", "uom": "Units",
+                                       "min_qty": 10, "initial_qty": 8, "initial_location_id": world["stock"]})
+    assert r.status_code == 201, r.text
+    chair = r.json()
+    assert (chair["uom"], chair["min_qty"]) == ("Units", 10.0)
+    assert client.post("/products", json={"sku": "X", "name": "X", "category": "Y", "initial_qty": 1}).status_code == 422
+
+    # Initial stock went through the ledger, so it's on hand and in Move History.
+    assert [q["qty"] for q in client.get("/quants", params={"q": "chair"}).json()] == [8.0]
+    assert client.get("/ledger", params={"product_id": chair["id"]}).json()[0]["delta"] == 8.0
+
+    assert client.patch(f"/products/{chair['id']}", json={"min_qty": 5}).json()["min_qty"] == 5.0
+    assert client.patch("/products/999999", json={"name": "Nope"}).status_code == 404
+
+    client.post("/operations", json={"type": "receive", "product_id": world["steel"], "qty": 5,
+                                     "dest_location_id": world["stock"], "partner": "Acme Steel"})
+    d = client.post("/operations", json={"type": "delivery", "product_id": chair["id"], "qty": 2,
+                                         "source_location_id": world["stock"]}).json()
+    client.post(f"/operations/{d['id']}/transition", json={"from": "draft", "to": "canceled"},
+                headers={"Idempotency-Key": uuid.uuid4().hex})
+
+    dash = client.get("/dashboard").json()
+    assert {k: dash[k] for k in ("products_in_stock", "low_stock", "out_of_stock", "pending_receipts",
+                                 "pending_deliveries", "scheduled_transfers")} == {
+        "products_in_stock": 1, "low_stock": 0, "out_of_stock": 1, "pending_receipts": 1,
+        "pending_deliveries": 0, "scheduled_transfers": 0}
+    assert [a["sku"] for a in dash["alerts"]] == ["STEEL"]
+    assert client.get("/dashboard", params={"category": "Furniture"}).json()["alerts"] == []
+
+    ops = client.get("/operations", params={"location_id": world["stock"], "status": "canceled"}).json()
+    assert [o["id"] for o in ops] == [d["id"]]
+    assert client.get("/operations", params={"location_id": world["rack"]}).json() == []
+    assert client.get("/operations", params={"q": "STE"}).json()[0]["partner"] == "Acme Steel"
+    assert [p["sku"] for p in client.get("/products", params={"q": "chai"}).json()] == ["CHAIR-1"]
