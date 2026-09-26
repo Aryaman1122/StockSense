@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>StockFlow — Inventory Management</title>
+
+<!-- ░░ FONTS — Google Fonts: Inter (design-resources skill) ░░ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ░░ ICONS — Tabler Icons 3500+ SVG (design-resources skill) ░░ -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+<!-- ░░ CHARTS — ApexCharts (design-resources skill) ░░ -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
+
+<!-- ░░ ANIMATIONS — Animate.css (design-resources skill) ░░ -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<style>
+/* ══════════════════════════════════════
+   DESIGN TOKENS
+   Palette sourced via Coolors + FlatUI Colors (design-resources skill)
+   Dark: #0d0d0f / Surface: #13131a / Accent: #e03a3a (refined red)
+   Blue: #3d8ef0 / Green: #2dc98d / Yellow: #f5a623
+══════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Surface scale */
+  --bg:        #0d0d0f;
+  --s0:        #111116;
+  --s1:        #16161d;
+  --s2:        #1c1c26;
+  --s3:        #22222e;
+  --s4:        #2a2a38;
+
+  /* Borders */
+  --b1:        #1e1e2a;
+  --b2:        #26263a;
+  --b3:        #30304a;
+
+  /* Accent — refined from FlatUI Colors */
+  --red:       #e03a3a;
+  --red-soft:  #c0322b;
+  --red-glow:  rgba(224,58,58,.15);
+  --red-faint: rgba(224,58,58,.06);
+
+  /* Semantic */
+  --blue:      #3d8ef0;
+  --blue-soft: rgba(61,142,240,.12);
+  --green:     #2dc98d;
+  --green-soft:rgba(45,201,141,.12);
+  --yellow:    #f5a623;
+  --yellow-soft:rgba(245,166,35,.12);
+  --purple:    #a78bfa;
+
+  /* Text */
+  --t1: #f0f0f8;
+  --t2: #b0b0c8;
+  --t3: #6a6a88;
+  --t4: #3a3a52;
+
+  /* Spacing */
+  --sidebar-w: 228px;
+  --topbar-h:  54px;
+  --r:         10px;
+  --r-sm:      6px;
+  --r-xs:      4px;
+
+  /* Font */
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--t1);font-size:13px;-webkit-font-smoothing:antialiased}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--s4)}
+
+/* ══════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════ */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+  background:var(--s0);border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;padding:0 18px;gap:14px;z-index:200;
+  backdrop-filter:blur(12px);
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.logo-mark{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,#e03a3a,#9b2226);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 16px rgba(224,58,58,.4);
+}
+.logo-mark i{font-size:17px;color:#fff}
+.logo-name{font-size:14px;font-weight:700;color:var(--t1);letter-spacing:-.3px}
+.logo-tag{font-size:9px;color:var(--t3);font-weight:500;margin-top:1px}
+
+.bar-sep{width:1px;height:20px;background:var(--b2)}
+
+#breadcrumb{display:flex;align-items:center;gap:5px;font-size:11px}
+.bc-seg{color:var(--t3);cursor:pointer;transition:color .15s;display:flex;align-items:center;gap:5px}
+.bc-seg:hover{color:var(--t2)}
+.bc-seg i{font-size:13px}
+.bc-arrow{color:var(--b3);font-size:11px}
+.bc-active{color:var(--t2);font-weight:600}
+
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{
+  width:32px;height:32px;border-radius:var(--r-sm);
+  border:1px solid var(--b2);background:var(--s1);
+  color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:all .15s;position:relative;
+}
+.icon-btn:hover{background:var(--s2);color:var(--t1);border-color:var(--b3)}
+.notif-pip{
+  position:absolute;top:5px;right:5px;width:6px;height:6px;
+  background:var(--red);border-radius:50%;border:1.5px solid var(--s0);
+  animation:pipPulse 2.5s ease infinite;
+}
+@keyframes pipPulse{0%,100%{box-shadow:0 0 0 0 rgba(224,58,58,.6)}70%{box-shadow:0 0 0 5px rgba(224,58,58,0)}}
+
+.user-pill{
+  display:flex;align-items:center;gap:8px;
+  padding:4px 12px 4px 4px;border:1px solid var(--b2);border-radius:20px;
+  background:var(--s1);cursor:pointer;font-size:11px;color:var(--t2);
+  transition:all .15s;
+}
+.user-pill:hover{background:var(--s2);border-color:var(--b3)}
+.u-avatar{
+  width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(135deg,var(--red),#9b2226);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#fff;flex-shrink:0;
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR
+   Pattern from Hero Patterns (design-resources skill) via CSS
+══════════════════════════════════════ */
+#sidebar{
+  position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);
+  background:var(--s0);border-right:1px solid var(--b1);
+  overflow-y:auto;z-index:100;display:flex;flex-direction:column;
+  /* subtle dot pattern inspired by Hero Patterns */
+  background-image:radial-gradient(var(--b1) 1px, transparent 1px);
+  background-size:20px 20px;
+  background-color:var(--s0);
+}
+.sb-logo-area{padding:16px 14px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--b1);margin-bottom:6px}
+
+.sb-section{
+  padding:14px 14px 5px;
+  font-size:9px;font-weight:700;color:var(--t4);
+  text-transform:uppercase;letter-spacing:1px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;
+  cursor:pointer;border-radius:var(--r-sm);margin:1px 8px;
+  color:var(--t3);font-size:12px;font-weight:500;
+  transition:all .15s;position:relative;user-select:none;
+}
+.nav-item:hover{background:var(--s2);color:var(--t2)}
+.nav-item.active{
+  background:var(--red-glow);color:var(--red);font-weight:600;
+  border:1px solid rgba(224,58,58,.2);
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);
+  width:3px;height:16px;background:var(--red);border-radius:0 3px 3px 0;
+}
+.nav-icon{
+  width:28px;height:28px;border-radius:var(--r-xs);display:flex;
+  align-items:center;justify-content:center;font-size:15px;flex-shrink:0;
+  background:var(--s2);color:var(--t3);transition:all .15s;
+}
+.nav-item:hover .nav-icon{background:var(--s3);color:var(--t2)}
+.nav-item.active .nav-icon{background:var(--red-glow);color:var(--red)}
+.nav-label{flex:1}
+.nav-badge{
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;
+  background:var(--red);color:#fff;min-width:20px;text-align:center;
+}
+.nav-badge.mute{background:var(--s3);color:var(--t3)}
+
+.sb-footer{
+  margin-top:auto;padding:12px;border-top:1px solid var(--b1);
+  background:var(--s0);
+}
+.sb-user{
+  display:flex;align-items:center;gap:10px;padding:10px;
+  border-radius:var(--r-sm);border:1px solid var(--b1);background:var(--s1);
+  cursor:pointer;
+}
+.sb-user:hover{background:var(--s2)}
+.sb-name{font-size:12px;color:var(--t2);font-weight:600}
+.sb-role{font-size:10px;color:var(--t3)}
+.live-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--green);
+  margin-left:auto;box-shadow:0 0 8px var(--green);
+  animation:livePulse 2s ease infinite;flex-shrink:0;
+}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ══════════════════════════════════════
+   MAIN CONTENT
+══════════════════════════════════════ */
+#main{
+  margin-top:var(--topbar-h);margin-left:var(--sidebar-w);
+  height:calc(100vh - var(--topbar-h));overflow-y:auto;
+  background:var(--bg);
+}
+.page{display:none;flex-direction:column;min-height:100%}
+.page.active{display:flex;animation:fadeInUp .2s ease}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══════════════════════════════════════
+   PAGE HEADER
+══════════════════════════════════════ */
+.ph{
+  padding:22px 24px 18px;
+  border-bottom:1px solid var(--b1);
+  display:flex;align-items:flex-end;gap:14px;flex-shrink:0;
+  background:var(--s0);
+}
+.ph-titles{flex:1}
+.ph-title{
+  font-size:20px;font-weight:800;color:var(--t1);
+  letter-spacing:-.5px;line-height:1.2;
+}
+.ph-sub{font-size:11px;color:var(--t3);margin-top:3px;font-weight:400}
+.ph-actions{display:flex;gap:8px;align-items:center}
+
+/* ══════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
+  border-radius:var(--r-sm);border:1px solid var(--b3);
+  background:var(--s2);color:var(--t2);cursor:pointer;
+  font-size:12px;font-weight:500;white-space:nowrap;
+  transition:all .15s;font-family:var(--font);
+}
+.btn:hover{background:var(--s3);color:var(--t1);border-color:var(--b3)}
+.btn i{font-size:15px}
+.btn.primary{
+  background:linear-gradient(135deg,var(--red),var(--red-soft));
+  border-color:var(--red);color:#fff;font-weight:600;
+  box-shadow:0 2px 12px rgba(224,58,58,.3);
+}
+.btn.primary:hover{box-shadow:0 4px 20px rgba(224,58,58,.45);transform:translateY(-1px)}
+.btn.success{background:var(--green-soft);border-color:rgba(45,201,141,.3);color:var(--green)}
+.btn.success:hover{background:rgba(45,201,141,.2)}
+.btn.ghost{background:transparent;border-color:var(--b2);color:var(--t3)}
+.btn.ghost:hover{background:var(--s2);color:var(--t2)}
+.btn.danger{background:var(--red-faint);border-color:rgba(224,58,58,.3);color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:11px}
+.btn.sm i{font-size:13px}
+
+/* ══════════════════════════════════════
+   TOOLBAR
+══════════════════════════════════════ */
+.toolbar{
+  padding:10px 24px;border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  flex-shrink:0;background:var(--s1);
+}
+.t-sep{width:1px;height:18px;background:var(--b2)}
+.search{
+  margin-left:auto;display:flex;align-items:center;gap:8px;
+  background:var(--s0);border:1px solid var(--b2);border-radius:var(--r-sm);
+  padding:6px 12px;min-width:220px;transition:border-color .15s;
+}
+.search:focus-within{border-color:var(--b3)}
+.search i{font-size:15px;color:var(--t4);flex-shrink:0}
+.search input{
+  background:transparent;border:none;outline:none;color:var(--t2);
+  font-size:12px;width:100%;font-family:var(--font);
+}
+.search input::placeholder{color:var(--t4)}
+.filter-chip{
+  display:flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;
+  background:var(--s2);border:1px solid var(--b2);color:var(--t3);
+  transition:all .15s;
+}
+.filter-chip:hover{border-color:var(--b3);color:var(--t2)}
+.filter-chip.active{background:var(--red-faint);border-color:rgba(224,58,58,.3);color:var(--red)}
+.filter-chip i{font-size:12px}
+
+/* ══════════════════════════════════════
+   TABLE
+══════════════════════════════════════ */
+.tbl-wrap{flex:1;overflow:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{position:sticky;top:0;z-index:5;background:var(--s1)}
+th{
+  font-size:10px;font-weight:700;color:var(--t3);text-align:left;
+  padding:10px 16px;border-bottom:1.5px solid var(--b2);
+  text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;
+  cursor:pointer;user-select:none;transition:color .15s;
+}
+th:hover{color:var(--t2)}
+th.sort-asc::after{content:' ↑';color:var(--red)}
+th.sort-desc::after{content:' ↓';color:var(--red)}
+td{
+  font-size:12px;color:var(--t2);padding:11px 16px;
+  border-bottom:1px solid var(--b1);white-space:nowrap;
+  transition:background .1s;
+}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover td{background:#ffffff03}
+tbody tr:hover td:first-child{
+  border-left:2px solid var(--red);
+  padding-left:14px;
+}
+.td-name{color:var(--t1);font-weight:600}
+.td-muted{color:var(--t3)}
+.td-mono{font-family:var(--mono);font-size:11px;color:var(--t3)}
+.td-link{color:var(--blue);font-weight:600;font-family:var(--mono);font-size:11px}
+.td-link:hover{text-decoration:underline}
+.td-r{text-align:right}
+
+/* ── Status Tags ── */
+.tag{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;
+}
+.tag i{font-size:10px}
+.tag.ready  {background:var(--green-soft);color:var(--green);border:1px solid rgba(45,201,141,.25)}
+.tag.done   {background:var(--blue-soft);color:var(--blue);border:1px solid rgba(61,142,240,.25)}
+.tag.pending{background:var(--yellow-soft);color:var(--yellow);border:1px solid rgba(245,166,35,.25)}
+.tag.draft  {background:var(--s3);color:var(--t3);border:1px solid var(--b2)}
+.tag.cancel {background:var(--red-faint);color:var(--red);border:1px solid rgba(224,58,58,.25)}
+
+/* ── Table footer ── */
+.tbl-foot{
+  padding:10px 20px;border-top:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;background:var(--s1);
+}
+.tbl-foot span{font-size:11px;color:var(--t3)}
+.pager{display:flex;gap:4px}
+.pg{
+  width:28px;height:28px;border-radius:var(--r-xs);
+  border:1px solid var(--b2);background:var(--s2);
+  color:var(--t2);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:600;
+  transition:all .15s;
+}
+.pg:hover{background:var(--s3);border-color:var(--b3)}
+.pg.on{background:var(--red);border-color:var(--red);color:#fff}
+
+/* ══════════════════════════════════════
+   FORM
+══════════════════════════════════════ */
+.form-scroll{flex:1;overflow:auto;padding:24px}
+.form-card{
+  background:var(--s1);border:1px solid var(--b1);
+  border-radius:var(--r);padding:20px;margin-bottom:16px;
+}
+.fc-head{
+  font-size:11px;font-weight:700;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.6px;
+  margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.fc-head::before{content:'';width:3px;height:14px;background:var(--red);border-radius:3px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.form-grid.g1{grid-template-columns:1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.s2{grid-column:1/-1}
+label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.fc{
+  background:var(--s0);border:1.5px solid var(--b2);border-radius:var(--r-sm);
+  padding:8px 12px;color:var(--t2);font-size:12px;outline:none;
+  transition:border-color .15s,box-shadow .15s;font-family:var(--font);width:100%;
+}
+.fc:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,58,58,.1)}
+.fc::placeholder{color:var(--t4)}
+.fc[readonly]{opacity:.7;cursor:not-allowed}
+select.fc{cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236a6a88' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px
+}
+textarea.fc{resize:vertical;min-height:72px}
+
+/* Status stepper */
+.stepper{
+  display:flex;align-items:center;padding:14px 24px;
+  border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0;
+}
+.step{
+  display:flex;align-items:center;gap:7px;padding:6px 14px;
+  border-radius:20px;border:1px solid var(--b2);background:var(--s2);
+  font-size:11px;color:var(--t3);transition:all .2s;
+}
+.step i{font-size:13px}
+.step.done{border-color:rgba(45,201,141,.3);background:var(--green-soft);color:var(--green)}
+.step.active{border-color:rgba(224,58,58,.4);background:var(--red-glow);color:var(--red);font-weight:600}
+.step-line{flex:1;height:1px;background:var(--b2);margin:0 8px;min-width:16px}
+
+/* Inline line-items table */
+.li-table{
+  width:100%;border-collapse:collapse;
+  border:1px solid var(--b2);border-radius:var(--r);overflow:hidden;margin-top:4px;
+}
+.li-table thead tr{background:var(--s2)}
+.li-table th{
+  padding:9px 14px;font-size:10px;font-weight:700;color:var(--t3);
+  text-align:left;text-transform:uppercase;letter-spacing:.5px;border:none;
+}
+.li-table th.r{text-align:right}
+.li-table td{
+  padding:10px 14px;font-size:12px;color:var(--t2);
+  border-bottom:1px solid var(--b1);transition:background .1s;
+}
+.li-table tbody tr:hover td{background:#ffffff03}
+.li-table td.r{text-align:right}
+.li-table tfoot td{
+  padding:10px 14px;font-size:12px;background:var(--s2);
+  border-top:1.5px solid var(--b2);
+}
+.li-input{
+  background:var(--s0);border:1px solid var(--b2);border-radius:var(--r-xs);
+  padding:4px 8px;color:var(--t2);font-size:12px;outline:none;
+  font-family:var(--font);transition:border-color .15s;
+}
+.li-input:focus{border-color:var(--red)}
+
+/* ══════════════════════════════════════
+   HUB / OVERVIEW
+══════════════════════════════════════ */
+.hub-body{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--b1)}
+.kpi{
+  padding:20px;background:var(--s1);cursor:pointer;
+  transition:background .15s;position:relative;overflow:hidden;
+}
+.kpi::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:transparent;
+  transition:background .2s;
+}
+.kpi:hover{background:var(--s2)}
+.kpi:hover::after{background:var(--red)}
+.kpi-icon{
+  width:36px;height:36px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;margin-bottom:10px;
+}
+.kpi-icon.red{background:var(--red-glow);color:var(--red)}
+.kpi-icon.blue{background:var(--blue-soft);color:var(--blue)}
+.kpi-icon.green{background:var(--green-soft);color:var(--green)}
+.kpi-icon.yellow{background:var(--yellow-soft);color:var(--yellow)}
+.kpi-num{font-size:28px;font-weight:800;color:var(--t1);letter-spacing:-1px;line-height:1}
+.kpi-label{font-size:11px;color:var(--t3);margin-top:4px;font-weight:500}
+.kpi-sub{font-size:10px;margin-top:4px;font-weight:600}
+.kpi-sub.red{color:var(--red)}
+.kpi-sub.green{color:var(--green)}
+
+.hub-row2{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.chart-card{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);
+  padding:18px 20px;
+}
+.cc-head{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;
+}
+.cc-title{font-size:13px;font-weight:700;color:var(--t1)}
+.cc-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.cc-legend{display:flex;gap:12px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3)}
+.leg-dot{width:8px;height:8px;border-radius:50%}
+
+.quick-actions{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);
+  padding:18px 20px;display:flex;flex-direction:column;gap:8px;
+}
+.qa-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.qa-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:var(--r-sm);border:1px solid var(--b1);background:var(--s2);
+  cursor:pointer;transition:all .15s;
+}
+.qa-item:hover{border-color:var(--b2);background:var(--s3)}
+.qa-icon{
+  width:32px;height:32px;border-radius:var(--r-xs);
+  background:var(--s3);display:flex;align-items:center;
+  justify-content:center;font-size:16px;flex-shrink:0;
+}
+.qa-text{font-size:12px;font-weight:600;color:var(--t2)}
+.qa-sub{font-size:10px;color:var(--t3);margin-top:1px}
+.qa-arrow{margin-left:auto;color:var(--t4);font-size:15px}
+
+.hub-row3{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.recent-card{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);
+  padding:18px 20px;
+}
+.rc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rc-title{font-size:13px;font-weight:700;color:var(--t1)}
+.rc-link{font-size:11px;color:var(--blue);cursor:pointer}
+.rc-link:hover{text-decoration:underline}
+.rc-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 0;border-bottom:1px solid var(--b1);
+}
+.rc-item:last-child{border-bottom:none}
+.rc-ref{font-size:11px;font-family:var(--mono);color:var(--blue)}
+.rc-label{font-size:11px;color:var(--t3);margin-top:1px}
+.rc-right{display:flex;align-items:center;gap:10px}
+
+/* ══════════════════════════════════════
+   MODAL
+══════════════════════════════════════ */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.overlay.open{display:flex;animation:fadeInBg .15s ease}
+@keyframes fadeInBg{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);
+  width:480px;max-width:90vw;animation:scaleIn .15s ease;
+  box-shadow:0 24px 80px rgba(0,0,0,.8);
+}
+@keyframes scaleIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.m-head{
+  padding:16px 20px;border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.m-title{font-size:14px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px}
+.m-title i{font-size:18px;color:var(--red)}
+.m-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;line-height:1;padding:4px}
+.m-close:hover{color:var(--t1)}
+.m-body{padding:20px}
+.m-foot{padding:14px 20px;border-top:1px solid var(--b1);display:flex;gap:8px;justify-content:flex-end}
+
+/* ══════════════════════════════════════
+   TOAST — inspired by Animate.css (design-resources skill)
+══════════════════════════════════════ */
+#toast-zone{
+  position:fixed;bottom:24px;right:24px;
+  z-index:9999;display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;
+}
+.toast{
+  background:var(--s2);border:1px solid var(--b3);border-radius:var(--r);
+  padding:12px 16px;color:var(--t2);
+  display:flex;align-items:center;gap:10px;
+  min-width:260px;max-width:360px;
+  box-shadow:0 8px 40px rgba(0,0,0,.7);
+  pointer-events:all;
+  animation:toastIn .2s ease;
+}
+.toast.success{background:rgba(45,201,141,.1);border-color:rgba(45,201,141,.25)}
+.toast.error  {background:var(--red-faint);border-color:rgba(224,58,58,.25)}
+.toast.info   {background:var(--blue-soft);border-color:rgba(61,142,240,.25)}
+.toast i{font-size:18px;flex-shrink:0}
+.toast.success i{color:var(--green)}
+.toast.error   i{color:var(--red)}
+.toast.info    i{color:var(--blue)}
+@keyframes toastIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ══════════════════════════════════════
+   MISC HELPERS
+══════════════════════════════════════ */
+.note-box{
+  padding:12px 16px;border-radius:var(--r-sm);font-size:11px;
+  color:var(--t3);display:flex;align-items:flex-start;gap:10px;margin-top:14px;
+}
+.note-box.info{background:var(--blue-soft);border:1px solid rgba(61,142,240,.2)}
+.note-box.warn{background:var(--yellow-soft);border:1px solid rgba(245,166,35,.2)}
+.note-box i{font-size:16px;flex-shrink:0;margin-top:1px}
+.note-box.info i{color:var(--blue)}
+.note-box.warn i{color:var(--yellow)}
+.note-box span{color:var(--t2)}
+
+input[type=checkbox]{accent-color:var(--red);width:14px;height:14px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ TOPBAR ══════════════════════ -->
+<div id="topbar">
+  <a class="logo" href="#" onclick="go('hub');return false">
+    <div class="logo-mark"><i class="ti ti-package"></i></div>
+    <div>
+      <div class="logo-name">StockFlow</div>
+      <div class="logo-tag">Inventory · v2.0</div>
+    </div>
+  </a>
+  <div class="bar-sep"></div>
+  <nav id="breadcrumb"></nav>
+  <div class="topbar-right">
+    <div class="icon-btn" title="Search" onclick="toast('Global search — coming soon','info')"><i class="ti ti-search"></i></div>
+    <div class="icon-btn" title="Notifications" onclick="toast('3 operations need attention','info')">
+      <i class="ti ti-bell"></i><div class="notif-pip"></div>
+    </div>
+    <div class="icon-btn" title="Settings" onclick="go('config')"><i class="ti ti-settings"></i></div>
+    <div class="bar-sep"></div>
+    <div class="user-pill" onclick="toast('Profile settings — coming soon','info')">
+      <div class="u-avatar">A</div>
+      Admin User <i class="ti ti-chevron-down" style="font-size:12px;color:var(--t3)"></i>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+<div id="sidebar">
+  <div class="sb-section" style="padding-top:18px">Inventory</div>
+  <div class="nav-item" data-r="hub"      onclick="go('hub')">
+    <div class="nav-icon"><i class="ti ti-layout-dashboard"></i></div>
+    <span class="nav-label">Overview</span>
+  </div>
+  <div class="nav-item" data-r="stock"    onclick="go('stock')">
+    <div class="nav-icon"><i class="ti ti-packages"></i></div>
+    <span class="nav-label">Stock</span>
+    <span class="nav-badge">38</span>
+  </div>
+  <div class="nav-item" data-r="area"     onclick="go('area')">
+    <div class="nav-icon"><i class="ti ti-map-pin"></i></div>
+    <span class="nav-label">Area History</span>
+  </div>
+
+  <div class="sb-section">Operations</div>
+  <div class="nav-item" data-r="receipts" onclick="go('receipts')">
+    <div class="nav-icon"><i class="ti ti-truck-delivery"></i></div>
+    <span class="nav-label">Receipts</span>
+    <span class="nav-badge">12</span>
+  </div>
+  <div class="nav-item" data-r="deliveries" onclick="go('deliveries')">
+    <div class="nav-icon"><i class="ti ti-send"></i></div>
+    <span class="nav-label">Deliveries</span>
+    <span class="nav-badge">20</span>
+  </div>
+  <div class="nav-item" data-r="transfers" onclick="go('transfers')">
+    <div class="nav-icon"><i class="ti ti-arrows-shuffle"></i></div>
+    <span class="nav-label">Transfers</span>
+    <span class="nav-badge mute">5</span>
+  </div>
+
+  <div class="sb-section">Products</div>
+  <div class="nav-item" data-r="lot" onclick="go('lot')">
+    <div class="nav-icon"><i class="ti ti-barcode"></i></div>
+    <span class="nav-label">Lot / Serial</span>
+  </div>
+
+  <div class="sb-section">Configuration</div>
+  <div class="nav-item" data-r="config" onclick="go('config')">
+    <div class="nav-icon"><i class="ti ti-adjustments-horizontal"></i></div>
+    <span class="nav-label">Settings</span>
+  </div>
+
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="u-avatar" style="width:34px;height:34px;font-size:12px">A</div>
+      <div>
+        <div class="sb-name">Admin User</div>
+        <div class="sb-role">Warehouse Manager</div>
+      </div>
+      <div class="live-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MAIN ══════════════════════ -->
+<div id="main">
+
+  <!-- ─── PAGE: OVERVIEW / HUB ─── -->
+  <div class="page" id="page-hub">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Good morning, Admin 👋</div>
+        <div class="ph-sub">Here's what's happening in your warehouse today.</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn ghost sm"><i class="ti ti-file-analytics"></i> Reports</button>
+        <button class="btn primary" onclick="go('receipts')"><i class="ti ti-plus"></i> New Receipt</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi" onclick="go('receipts')">
+        <div class="kpi-icon red"><i class="ti ti-truck-delivery"></i></div>
+        <div class="kpi-num">12</div>
+        <div class="kpi-label">Receipts</div>
+        <div class="kpi-sub red">3 ready to process</div>
+      </div>
+      <div class="kpi" onclick="go('transfers')">
+        <div class="kpi-icon blue"><i class="ti ti-arrows-shuffle"></i></div>
+        <div class="kpi-num">5</div>
+        <div class="kpi-label">Transfers</div>
+        <div class="kpi-sub green">2 ready</div>
+      </div>
+      <div class="kpi" onclick="go('stock')">
+        <div class="kpi-icon green"><i class="ti ti-packages"></i></div>
+        <div class="kpi-num">38</div>
+        <div class="kpi-label">Products in Stock</div>
+        <div class="kpi-sub green">↑ 1,240 units on hand</div>
+      </div>
+      <div class="kpi" onclick="go('deliveries')">
+        <div class="kpi-icon yellow"><i class="ti ti-send"></i></div>
+        <div class="kpi-num">20</div>
+        <div class="kpi-label">Deliveries</div>
+        <div class="kpi-sub red">7 ready to ship</div>
+      </div>
+    </div>
+
+    <div class="hub-body">
+      <div class="hub-row2">
+        <!-- ApexCharts — from design-resources skill -->
+        <div class="chart-card">
+          <div class="cc-head">
+            <div>
+              <div class="cc-title">Stock Movement — Last 7 Days</div>
+              <div class="cc-sub">Receipts vs Deliveries</div>
+            </div>
+            <div class="cc-legend">
+              <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Receipts</div>
+              <div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Deliveries</div>
+            </div>
+          </div>
+          <div id="chart-movement"></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <div class="qa-title">Quick Actions</div>
+          <div class="qa-item" onclick="go('receipts')">
+            <div class="qa-icon"><i class="ti ti-truck-delivery" style="color:var(--red)"></i></div>
+            <div><div class="qa-text">Manage Receipts</div><div class="qa-sub">12 pending operations</div></div>
+            <i class="ti ti-chevron-right qa-arrow"></i>
+          </div>
+          <div class="qa-item" onclick="go('deliveries')">
+            <div class="qa-icon"><i class="ti ti-send" style="color:var(--blue)"></i></div>
+            <div><div class="qa-text">Process Deliveries</div><div class="qa-sub">7 ready to ship</div></div>
+            <i class="ti ti-chevron-right qa-arrow"></i>
+          </div>
+          <div class="qa-item" onclick="go('area')">
+            <div class="qa-icon"><i class="ti ti-map-pin" style="color:var(--green)"></i></div>
+            <div><div class="qa-text">Area History</div><div class="qa-sub">142 moves logged</div></div>
+            <i class="ti ti-chevron-right qa-arrow"></i>
+          </div>
+          <div class="qa-item" onclick="go('config')">
+            <div class="qa-icon"><i class="ti ti-adjustments-horizontal" style="color:var(--yellow)"></i></div>
+            <div><div class="qa-text">Putaway Rules</div><div class="qa-sub">Configure routing</div></div>
+            <i class="ti ti-chevron-right qa-arrow"></i>
+          </div>
+          <div class="qa-item" onclick="toast('Price update initiated for all products','success')">
+            <div class="qa-icon"><i class="ti ti-currency-dollar" style="color:var(--purple)"></i></div>
+            <div><div class="qa-text">Price Update</div><div class="qa-sub">Update product costs</div></div>
+            <i class="ti ti-chevron-right qa-arrow"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="hub-row3">
+        <!-- Recent Receipts -->
+        <div class="recent-card">
+          <div class="rc-head">
+            <div class="rc-title">Recent Receipts</div>
+            <div class="rc-link" onclick="go('receipts')">View all →</div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/IN/00012</div><div class="rc-label">Supplier Alpha Ltd · Sep 30</div></div>
+            <div class="rc-right"><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/IN/00011</div><div class="rc-label">Supplier Beta Corp · Sep 28</div></div>
+            <div class="rc-right"><span class="tag done"><i class="ti ti-check"></i>Done</span></div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/IN/00010</div><div class="rc-label">Supplier Gamma Inc · Oct 2</div></div>
+            <div class="rc-right"><span class="tag pending"><i class="ti ti-clock"></i>Pending</span></div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/IN/00009</div><div class="rc-label">Supplier Alpha Ltd · Sep 25</div></div>
+            <div class="rc-right"><span class="tag draft"><i class="ti ti-file"></i>Draft</span></div>
+          </div>
+        </div>
+
+        <!-- Recent Deliveries -->
+        <div class="recent-card">
+          <div class="rc-head">
+            <div class="rc-title">Recent Deliveries</div>
+            <div class="rc-link" onclick="go('deliveries')">View all →</div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/OUT/00020</div><div class="rc-label">Customer Alpha · Sep 28</div></div>
+            <div class="rc-right"><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/OUT/00019</div><div class="rc-label">Customer Beta · Sep 27</div></div>
+            <div class="rc-right"><span class="tag done"><i class="ti ti-check"></i>Done</span></div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/OUT/00018</div><div class="rc-label">Customer Gamma · Sep 30</div></div>
+            <div class="rc-right"><span class="tag pending"><i class="ti ti-clock"></i>Pending</span></div>
+          </div>
+          <div class="rc-item">
+            <div><div class="rc-ref">WH/OUT/00017</div><div class="rc-label">Customer Delta · Sep 26</div></div>
+            <div class="rc-right"><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- stock distribution donut -->
+      <div class="chart-card" style="max-width:100%">
+        <div class="cc-head">
+          <div>
+            <div class="cc-title">Stock Distribution by Location</div>
+            <div class="cc-sub">Units on hand per warehouse location</div>
+          </div>
+        </div>
+        <div id="chart-donut"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: STOCK ─── -->
+  <div class="page" id="page-stock">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Stock</div>
+        <div class="ph-sub">Current inventory levels — stock_quant records</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn ghost sm"><i class="ti ti-upload"></i> Export</button>
+        <button class="btn ghost sm"><i class="ti ti-settings"></i> Putaway Rules</button>
+        <button class="btn primary"><i class="ti ti-plus"></i> Update Qty</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="filter-chip active"><i class="ti ti-filter"></i> All Locations</div>
+      <div class="filter-chip" onclick="toast('Filter applied: WH/Stock','info')"><i class="ti ti-map-pin"></i> WH / Stock</div>
+      <div class="filter-chip" onclick="toast('Filter applied: Low stock','info')"><i class="ti ti-alert-triangle"></i> Low Stock</div>
+      <div class="t-sep"></div>
+      <div class="filter-chip"><i class="ti ti-sort-ascending"></i> Sort ▾</div>
+      <div class="search">
+        <i class="ti ti-search"></i>
+        <input placeholder="Search product, location, SKU…" oninput="filterTbl('tbody-stock',this.value,[1,2,3])">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:36px"><input type="checkbox" onchange="chkAll('tbody-stock',this)"></th>
+          <th>Product</th><th>SKU</th><th>Location</th>
+          <th class="td-r">On Hand</th><th class="td-r">Free to Use</th>
+          <th>UoM</th><th>Lot / Serial</th><th>Putaway</th>
+        </tr></thead>
+        <tbody id="tbody-stock">
+          <tr onclick="go('lot')"><td><input type="checkbox"></td>
+            <td class="td-name">Product Alpha</td><td class="td-mono">SKU-001</td>
+            <td class="td-muted">WH / Stock</td>
+            <td class="td-r">142</td><td class="td-r">130</td>
+            <td class="td-muted">Units</td><td class="td-mono">LOT-2024-001</td>
+            <td style="color:var(--green)"><i class="ti ti-circle-check" style="font-size:13px"></i> Active</td></tr>
+          <tr onclick="go('lot')"><td><input type="checkbox"></td>
+            <td class="td-name">Product Beta</td><td class="td-mono">SKU-002</td>
+            <td class="td-muted">WH / Shelf / A</td>
+            <td class="td-r">58</td><td class="td-r">58</td>
+            <td class="td-muted">kg</td><td class="td-muted">—</td>
+            <td class="td-muted"><i class="ti ti-minus" style="font-size:13px"></i> None</td></tr>
+          <tr onclick="go('lot')"><td><input type="checkbox"></td>
+            <td class="td-name">Product Gamma</td><td class="td-mono">SKU-003</td>
+            <td class="td-muted">WH / Stock</td>
+            <td class="td-r" style="color:var(--red)">0</td>
+            <td class="td-r" style="color:var(--red)">0</td>
+            <td class="td-muted">Units</td><td class="td-muted">—</td>
+            <td style="color:var(--yellow)"><i class="ti ti-alert-triangle" style="font-size:13px"></i> Missing</td></tr>
+          <tr onclick="go('lot')"><td><input type="checkbox"></td>
+            <td class="td-name">Product Delta</td><td class="td-mono">SKU-004</td>
+            <td class="td-muted">WH / Shelf / B</td>
+            <td class="td-r">310</td><td class="td-r">310</td>
+            <td class="td-muted">Units</td><td class="td-mono">LOT-2024-002</td>
+            <td style="color:var(--green)"><i class="ti ti-circle-check" style="font-size:13px"></i> Active</td></tr>
+          <tr onclick="go('lot')"><td><input type="checkbox"></td>
+            <td class="td-name">Product Epsilon</td><td class="td-mono">SKU-005</td>
+            <td class="td-muted">WH / Stock</td>
+            <td class="td-r">74</td><td class="td-r">70</td>
+            <td class="td-muted">Liters</td><td class="td-muted">—</td>
+            <td style="color:var(--green)"><i class="ti ti-circle-check" style="font-size:13px"></i> Active</td></tr>
+          <tr onclick="go('lot')"><td><input type="checkbox"></td>
+            <td class="td-name">Product Zeta</td><td class="td-mono">SKU-006</td>
+            <td class="td-muted">WH / Shelf / C</td>
+            <td class="td-r">22</td><td class="td-r">22</td>
+            <td class="td-muted">Units</td><td class="td-mono">LOT-2024-003</td>
+            <td style="color:var(--green)"><i class="ti ti-circle-check" style="font-size:13px"></i> Active</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-box warn" style="margin:12px 20px">
+      <i class="ti ti-info-circle"></i>
+      <span>You need to add a putaway rule for <strong>Product Gamma</strong>. Click <strong>Putaway Rules</strong> above to configure routing.</span>
+    </div>
+    <div class="tbl-foot">
+      <span>Showing 1–6 of 38 records</span>
+      <div class="pager"><div class="pg">‹</div><div class="pg on">1</div><div class="pg">2</div><div class="pg">3</div><div class="pg">›</div></div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: AREA HISTORY ─── -->
+  <div class="page" id="page-area">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Area History</div>
+        <div class="ph-sub">All stock_move records by location — default: list view</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn ghost sm"><i class="ti ti-calendar"></i> Date Range</button>
+        <button class="btn ghost sm"><i class="ti ti-upload"></i> Export</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="filter-chip active"><i class="ti ti-map-pin"></i> All Locations</div>
+      <div class="filter-chip"><i class="ti ti-truck-delivery"></i> Receipts only</div>
+      <div class="filter-chip"><i class="ti ti-send"></i> Deliveries only</div>
+      <div class="search">
+        <i class="ti ti-search"></i>
+        <input placeholder="Search location, product, reference…" oninput="filterTbl('tbody-area',this.value,[0,1,2,3])">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Date / Time</th><th>Location</th><th>Product</th>
+          <th>Reference</th><th class="td-r">Qty Done</th>
+          <th>Operation Type</th><th>Status</th>
+        </tr></thead>
+        <tbody id="tbody-area">
+          <tr onclick="go('receipts')">
+            <td class="td-muted">Sep 26, 2024 14:02</td>
+            <td>WH / Stock</td><td class="td-name">Product Alpha</td>
+            <td class="td-link">WH/IN/00012</td>
+            <td class="td-r" style="color:var(--green);font-weight:700">+50</td>
+            <td><span style="color:var(--t3);font-size:11px"><i class="ti ti-truck-delivery" style="font-size:13px"></i> Receipt</span></td>
+            <td><span class="tag done"><i class="ti ti-check"></i>Done</span></td>
+          </tr>
+          <tr onclick="go('deliveries')">
+            <td class="td-muted">Sep 25, 2024 10:31</td>
+            <td>WH / Shelf / A</td><td class="td-name">Product Beta</td>
+            <td class="td-link">WH/OUT/00019</td>
+            <td class="td-r" style="color:var(--red);font-weight:700">-20</td>
+            <td><span style="color:var(--t3);font-size:11px"><i class="ti ti-send" style="font-size:13px"></i> Delivery</span></td>
+            <td><span class="tag done"><i class="ti ti-check"></i>Done</span></td>
+          </tr>
+          <tr onclick="go('receipts')">
+            <td class="td-muted">Sep 24, 2024 09:15</td>
+            <td>WH / Stock</td><td class="td-name">Product Gamma</td>
+            <td class="td-link">WH/IN/00011</td>
+            <td class="td-r" style="color:var(--green);font-weight:700">+100</td>
+            <td><span style="color:var(--t3);font-size:11px"><i class="ti ti-truck-delivery" style="font-size:13px"></i> Receipt</span></td>
+            <td><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></td>
+          </tr>
+          <tr onclick="go('transfers')">
+            <td class="td-muted">Sep 23, 2024 16:44</td>
+            <td>WH / Shelf / B</td><td class="td-name">Product Delta</td>
+            <td class="td-link">WH/INT/00004</td>
+            <td class="td-r" style="color:var(--yellow);font-weight:700">-5</td>
+            <td><span style="color:var(--t3);font-size:11px"><i class="ti ti-arrows-shuffle" style="font-size:13px"></i> Transfer</span></td>
+            <td><span class="tag pending"><i class="ti ti-clock"></i>Pending</span></td>
+          </tr>
+          <tr onclick="go('deliveries')">
+            <td class="td-muted">Sep 23, 2024 11:20</td>
+            <td>WH / Stock</td><td class="td-name">Product Alpha</td>
+            <td class="td-link">WH/OUT/00018</td>
+            <td class="td-r" style="color:var(--red);font-weight:700">-30</td>
+            <td><span style="color:var(--t3);font-size:11px"><i class="ti ti-send" style="font-size:13px"></i> Delivery</span></td>
+            <td><span class="tag pending"><i class="ti ti-clock"></i>Pending</span></td>
+          </tr>
+          <tr onclick="go('receipts')">
+            <td class="td-muted">Sep 22, 2024 08:00</td>
+            <td>WH / Shelf / C</td><td class="td-name">Product Zeta</td>
+            <td class="td-link">WH/IN/00010</td>
+            <td class="td-r" style="color:var(--green);font-weight:700">+22</td>
+            <td><span style="color:var(--t3);font-size:11px"><i class="ti ti-truck-delivery" style="font-size:13px"></i> Receipt</span></td>
+            <td><span class="tag done"><i class="ti ti-check"></i>Done</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <span>Showing 1–6 of 142 moves</span>
+      <div class="pager"><div class="pg">‹</div><div class="pg on">1</div><div class="pg">2</div><div class="pg">10</div><div class="pg">›</div></div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: RECEIPTS ─── -->
+  <div class="page" id="page-receipts">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Receipts</div>
+        <div class="ph-sub">Incoming stock from suppliers — operations</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn success" onclick="toast('Receipt WH/IN/00012 validated','success')"><i class="ti ti-check"></i> Validate</button>
+        <button class="btn primary" onclick="openModal('modal-po')"><i class="ti ti-plus"></i> Create</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="filter-chip active"><i class="ti ti-list"></i> All</div>
+      <div class="filter-chip" style="color:var(--green)"><i class="ti ti-point-filled"></i> Ready: 3</div>
+      <div class="filter-chip" style="color:var(--blue)"><i class="ti ti-check"></i> Done: 6</div>
+      <div class="filter-chip" style="color:var(--yellow)"><i class="ti ti-clock"></i> Pending: 3</div>
+      <div class="search">
+        <i class="ti ti-search"></i>
+        <input placeholder="Search reference, supplier…" oninput="filterTbl('tbody-rec',this.value,[1,2,4])">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:36px"><input type="checkbox" onchange="chkAll('tbody-rec',this)"></th>
+          <th>Reference</th><th>Supplier</th><th>Scheduled Date</th>
+          <th>Source Doc</th><th>Type</th><th>Status</th>
+        </tr></thead>
+        <tbody id="tbody-rec">
+          <tr onclick="go('purchase')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/IN/00012</td><td>Supplier Alpha Ltd</td>
+            <td class="td-muted">Sep 30, 2024</td><td class="td-mono">PO/00034</td>
+            <td class="td-muted">Receipts</td><td><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></td></tr>
+          <tr onclick="go('purchase')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/IN/00011</td><td>Supplier Beta Corp</td>
+            <td class="td-muted">Sep 28, 2024</td><td class="td-mono">PO/00031</td>
+            <td class="td-muted">Receipts</td><td><span class="tag done"><i class="ti ti-check"></i>Done</span></td></tr>
+          <tr onclick="go('purchase')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/IN/00010</td><td>Supplier Gamma Inc</td>
+            <td class="td-muted">Oct 2, 2024</td><td class="td-mono">PO/00029</td>
+            <td class="td-muted">Receipts</td><td><span class="tag pending"><i class="ti ti-clock"></i>Pending</span></td></tr>
+          <tr onclick="go('purchase')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/IN/00009</td><td>Supplier Alpha Ltd</td>
+            <td class="td-muted">Sep 25, 2024</td><td class="td-mono">PO/00028</td>
+            <td class="td-muted">Receipts</td><td><span class="tag draft"><i class="ti ti-file"></i>Draft</span></td></tr>
+          <tr onclick="go('purchase')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/IN/00008</td><td>Supplier Delta GmbH</td>
+            <td class="td-muted">Sep 20, 2024</td><td class="td-mono">PO/00025</td>
+            <td class="td-muted">Receipts</td><td><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <span>Showing 1–5 of 12 receipts</span>
+      <div class="pager"><div class="pg">‹</div><div class="pg on">1</div><div class="pg">2</div><div class="pg">3</div><div class="pg">›</div></div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: DELIVERIES ─── -->
+  <div class="page" id="page-deliveries">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Delivery Orders</div>
+        <div class="ph-sub">Outgoing shipments — click row to open detail</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn success" onclick="toast('Selected deliveries validated','success')"><i class="ti ti-check"></i> Validate</button>
+        <button class="btn primary"><i class="ti ti-plus"></i> Create</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="filter-chip active"><i class="ti ti-list"></i> All</div>
+      <div class="filter-chip" style="color:var(--green)"><i class="ti ti-point-filled"></i> Ready: 7</div>
+      <div class="filter-chip" style="color:var(--blue)"><i class="ti ti-check"></i> Done: 10</div>
+      <div class="filter-chip" style="color:var(--yellow)"><i class="ti ti-clock"></i> Pending: 3</div>
+      <div class="search">
+        <i class="ti ti-search"></i>
+        <input placeholder="Search reference, customer…" oninput="filterTbl('tbody-del',this.value,[1,2,4])">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:36px"><input type="checkbox" onchange="chkAll('tbody-del',this)"></th>
+          <th>Reference</th><th>Customer</th><th>Scheduled Date</th>
+          <th>Source Doc</th><th class="td-r">Delivery Count</th><th>Status</th>
+        </tr></thead>
+        <tbody id="tbody-del">
+          <tr onclick="go('delivery-detail')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/OUT/00020</td><td>Customer Alpha</td>
+            <td class="td-muted">Sep 28, 2024</td><td class="td-mono">SO/00041</td>
+            <td class="td-r">1</td><td><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></td></tr>
+          <tr onclick="go('delivery-detail')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/OUT/00019</td><td>Customer Beta</td>
+            <td class="td-muted">Sep 27, 2024</td><td class="td-mono">SO/00040</td>
+            <td class="td-r">1</td><td><span class="tag done"><i class="ti ti-check"></i>Done</span></td></tr>
+          <tr onclick="go('delivery-detail')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/OUT/00018</td><td>Customer Gamma</td>
+            <td class="td-muted">Sep 30, 2024</td><td class="td-mono">SO/00039</td>
+            <td class="td-r">2</td><td><span class="tag pending"><i class="ti ti-clock"></i>Pending</span></td></tr>
+          <tr onclick="go('delivery-detail')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/OUT/00017</td><td>Customer Delta</td>
+            <td class="td-muted">Sep 26, 2024</td><td class="td-mono">SO/00038</td>
+            <td class="td-r">1</td><td><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></td></tr>
+          <tr onclick="go('delivery-detail')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/OUT/00016</td><td>Customer Epsilon</td>
+            <td class="td-muted">Sep 25, 2024</td><td class="td-mono">SO/00037</td>
+            <td class="td-r">1</td><td><span class="tag done"><i class="ti ti-check"></i>Done</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <span>Showing 1–5 of 20 deliveries</span>
+      <div class="pager"><div class="pg">‹</div><div class="pg on">1</div><div class="pg">2</div><div class="pg">4</div><div class="pg">›</div></div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: DELIVERY DETAIL ─── -->
+  <div class="page" id="page-delivery-detail">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">WH/OUT/00020</div>
+        <div class="ph-sub">Delivery Order · Customer Alpha · SO/00041</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn ghost" onclick="go('deliveries')"><i class="ti ti-arrow-left"></i> Back</button>
+        <button class="btn ghost"><i class="ti ti-printer"></i> Print</button>
+        <button class="btn danger"><i class="ti ti-corner-up-left"></i> Return</button>
+        <button class="btn success" onclick="valDelivery()"><i class="ti ti-check"></i> Validate</button>
+      </div>
+    </div>
+    <div class="stepper">
+      <div class="step done"><i class="ti ti-check"></i> Draft</div><div class="step-line"></div>
+      <div class="step done"><i class="ti ti-check"></i> Confirmed</div><div class="step-line"></div>
+      <div class="step active"><i class="ti ti-point-filled"></i> Ready</div><div class="step-line"></div>
+      <div class="step"><i class="ti ti-circle"></i> Done</div>
+    </div>
+    <div class="form-scroll">
+      <div class="form-card">
+        <div class="fc-head">General Information</div>
+        <div class="form-grid">
+          <div class="fg"><label>Delivery Reference</label><input class="fc" value="WH/OUT/00020" readonly></div>
+          <div class="fg"><label>Source Document</label><input class="fc" value="SO/00041" readonly></div>
+          <div class="fg"><label>Order Date</label><input class="fc" type="date" value="2024-09-26"></div>
+          <div class="fg"><label>Scheduled Date</label><input class="fc" type="date" value="2024-09-28"></div>
+          <div class="fg"><label>Customer</label><input class="fc" value="Customer Alpha"></div>
+          <div class="fg"><label>Responsible</label><input class="fc" value="Admin User"></div>
+          <div class="fg"><label>Source Location</label><select class="fc"><option>WH / Stock</option><option>WH / Shelf / A</option></select></div>
+          <div class="fg"><label>Destination Location</label><select class="fc"><option>Customer Locations</option><option>Partners / Customers</option></select></div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="fc-head">Product Lines</div>
+        <table class="li-table">
+          <thead><tr>
+            <th>Product</th><th>Lot / Serial</th>
+            <th class="r">Demand</th><th class="r">Done</th>
+            <th class="r">Unit Price</th><th class="r">Subtotal</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--t1);font-weight:600">Product Alpha</td>
+              <td class="td-mono">LOT-2024-001</td>
+              <td class="r">10</td>
+              <td class="r"><input type="number" value="10" class="li-input" style="width:64px;color:var(--green);text-align:right"></td>
+              <td class="r">$42.00</td>
+              <td class="r" style="color:var(--t1);font-weight:600">$420.00</td>
+            </tr>
+            <tr>
+              <td style="color:var(--t1);font-weight:600">Product Beta</td>
+              <td class="td-muted">—</td>
+              <td class="r">5</td>
+              <td class="r"><input type="number" value="3" class="li-input" style="width:64px;color:var(--yellow);text-align:right"></td>
+              <td class="r">$18.50</td>
+              <td class="r" style="color:var(--t1);font-weight:600">$55.50</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" style="text-align:right;color:var(--t3);font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:.5px">Grand Total</td>
+              <td style="text-align:right;color:var(--t1);font-size:15px;font-weight:800">$475.50</td>
+            </tr>
+          </tfoot>
+        </table>
+        <div class="note-box info" style="margin-top:12px">
+          <i class="ti ti-info-circle"></i>
+          <span>On validate: creates <strong>stock_move</strong> records per line and updates <strong>stock_quant.on_hand</strong> for each location.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: TRANSFERS ─── -->
+  <div class="page" id="page-transfers">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Internal Transfers</div>
+        <div class="ph-sub">Move stock between warehouse locations</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn success" onclick="toast('Transfer validated','success')"><i class="ti ti-check"></i> Validate</button>
+        <button class="btn primary"><i class="ti ti-plus"></i> Create</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="filter-chip active"><i class="ti ti-list"></i> All</div>
+      <div class="search"><i class="ti ti-search"></i><input placeholder="Search…"></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th><input type="checkbox"></th>
+          <th>Reference</th><th>From Location</th><th>To Location</th>
+          <th>Scheduled Date</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+          <tr onclick="toast('Opening WH/INT/00004','info')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/INT/00004</td><td class="td-muted">WH / Stock</td>
+            <td class="td-muted">WH / Shelf / B</td><td class="td-muted">Sep 23, 2024</td>
+            <td><span class="tag pending"><i class="ti ti-clock"></i>Pending</span></td></tr>
+          <tr onclick="toast('Opening WH/INT/00003','info')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/INT/00003</td><td class="td-muted">WH / Shelf / A</td>
+            <td class="td-muted">WH / Shelf / C</td><td class="td-muted">Sep 22, 2024</td>
+            <td><span class="tag done"><i class="ti ti-check"></i>Done</span></td></tr>
+          <tr onclick="toast('Opening WH/INT/00002','info')"><td><input type="checkbox"></td>
+            <td class="td-link">WH/INT/00002</td><td class="td-muted">WH / Stock</td>
+            <td class="td-muted">WH / Shelf / A</td><td class="td-muted">Sep 20, 2024</td>
+            <td><span class="tag ready"><i class="ti ti-point-filled"></i>Ready</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <span>Showing 1–3 of 5 transfers</span>
+      <div class="pager"><div class="pg on">1</div><div class="pg">2</div></div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: LOT / SERIAL ─── -->
+  <div class="page" id="page-lot">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Lot / Serial Numbers</div>
+        <div class="ph-sub">Product traceability &amp; expiry — lot model</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn ghost sm"><i class="ti ti-route"></i> Traceability</button>
+        <button class="btn primary" onclick="openModal('modal-lot')"><i class="ti ti-plus"></i> New Lot</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="filter-chip active"><i class="ti ti-list"></i> All</div>
+      <div class="filter-chip" style="color:var(--yellow)"><i class="ti ti-alert-triangle"></i> Near Expiry</div>
+      <div class="search"><i class="ti ti-search"></i><input placeholder="Search lot, product…"></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th><input type="checkbox"></th>
+          <th>Lot / Serial</th><th>Product</th><th>Company</th>
+          <th>Best Before</th><th>Expiration</th><th class="td-r">On Hand</th>
+        </tr></thead>
+        <tbody>
+          <tr onclick="openModal('modal-lot')"><td><input type="checkbox"></td>
+            <td class="td-link">LOT-2024-001</td><td>Product Alpha</td>
+            <td class="td-muted">My Company</td>
+            <td class="td-muted">Dec 31, 2024</td><td class="td-muted">Jun 30, 2025</td>
+            <td class="td-r">142</td></tr>
+          <tr onclick="openModal('modal-lot')"><td><input type="checkbox"></td>
+            <td class="td-link">LOT-2024-002</td><td>Product Delta</td>
+            <td class="td-muted">My Company</td>
+            <td class="td-muted">Mar 31, 2025</td><td class="td-muted">Sep 30, 2025</td>
+            <td class="td-r">310</td></tr>
+          <tr onclick="openModal('modal-lot')"><td><input type="checkbox"></td>
+            <td class="td-link">LOT-2024-003</td><td>Product Zeta</td>
+            <td class="td-muted">My Company</td>
+            <td class="td-muted">Jan 15, 2025</td>
+            <td style="color:var(--yellow);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:12px"></i> Oct 1, 2024</td>
+            <td class="td-r">22</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <span>Showing 1–3 of 3 lots</span>
+      <div class="pager"><div class="pg on">1</div></div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: PURCHASE / OPERATION FORM ─── -->
+  <div class="page" id="page-purchase">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Purchase Order · PO/00034</div>
+        <div class="ph-sub">operation type: incoming — creates stock_move on confirm</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn ghost" onclick="go('receipts')"><i class="ti ti-arrow-left"></i> Back</button>
+        <button class="btn ghost"><i class="ti ti-printer"></i> Print RFQ</button>
+        <button class="btn ghost"><i class="ti ti-mail"></i> Send Email</button>
+        <button class="btn primary" onclick="confirmPO()"><i class="ti ti-check"></i> Confirm Order</button>
+      </div>
+    </div>
+    <div class="stepper">
+      <div class="step active"><i class="ti ti-point-filled"></i> Draft RFQ</div><div class="step-line"></div>
+      <div class="step"><i class="ti ti-circle"></i> Confirmed</div><div class="step-line"></div>
+      <div class="step"><i class="ti ti-circle"></i> Received</div><div class="step-line"></div>
+      <div class="step"><i class="ti ti-circle"></i> Locked</div>
+    </div>
+    <div class="form-scroll">
+      <div class="form-card">
+        <div class="fc-head">Order Details</div>
+        <div class="form-grid">
+          <div class="fg"><label>Vendor</label>
+            <select class="fc"><option>Supplier Alpha Ltd</option><option>Supplier Beta Corp</option><option>Supplier Gamma Inc</option></select>
+          </div>
+          <div class="fg"><label>Reference</label><input class="fc" value="PO/00034" readonly></div>
+          <div class="fg"><label>Order Date</label><input class="fc" type="date" value="2024-09-26"></div>
+          <div class="fg"><label>Delivery Count</label><input class="fc" value="1 delivery" readonly style="color:var(--red);font-weight:600"></div>
+          <div class="fg"><label>Deliver To</label><select class="fc"><option>WH / Input</option><option>WH / Stock</option></select></div>
+          <div class="fg"><label>Operation Type</label><select class="fc"><option>Receipts</option><option>Internal Transfer</option></select></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="fc-head">Order Lines</div>
+        <table class="li-table">
+          <thead><tr>
+            <th>Product</th><th class="r">Qty</th>
+            <th class="r">Unit Price</th><th class="r">Tax</th><th class="r">Total</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><select class="li-input"><option>Product Alpha</option><option>Product Beta</option></select></td>
+              <td class="r"><input type="number" value="50" class="li-input" style="width:64px;text-align:right"></td>
+              <td class="r"><input type="number" value="40.00" class="li-input" style="width:80px;text-align:right"></td>
+              <td class="r td-muted">15%</td>
+              <td class="r" style="color:var(--t1);font-weight:600">$2,300.00</td>
+            </tr>
+            <tr>
+              <td><select class="li-input"><option>Product Beta</option><option>Product Alpha</option></select></td>
+              <td class="r"><input type="number" value="20" class="li-input" style="width:64px;text-align:right"></td>
+              <td class="r"><input type="number" value="18.00" class="li-input" style="width:80px;text-align:right"></td>
+              <td class="r td-muted">15%</td>
+              <td class="r" style="color:var(--t1);font-weight:600">$414.00</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align:right;color:var(--t3);font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:.5px">Grand Total</td>
+              <td style="text-align:right;color:var(--t1);font-size:15px;font-weight:800">$2,714.00</td>
+            </tr>
+          </tfoot>
+        </table>
+        <div class="note-box info" style="margin-top:12px">
+          <i class="ti ti-info-circle"></i>
+          <span>Confirming creates an <strong>operation</strong> record (type: incoming) and generates <strong>stock_move</strong> entries per line.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: CONFIG ─── -->
+  <div class="page" id="page-config">
+    <div class="ph">
+      <div class="ph-titles">
+        <div class="ph-title">Configuration</div>
+        <div class="ph-sub">Membership, warehouse &amp; routing settings</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn ghost"><i class="ti ti-x"></i> Discard</button>
+        <button class="btn primary" onclick="toast('Settings saved successfully','success')"><i class="ti ti-device-floppy"></i> Save</button>
+      </div>
+    </div>
+    <div class="form-scroll" style="max-width:720px">
+      <div class="form-card">
+        <div class="fc-head">Membership / Notifications</div>
+        <div class="form-grid">
+          <div class="fg"><label>Title</label><input class="fc" value="Inventory Configuration"></div>
+          <div class="fg"><label>Send From</label><input class="fc" value="noreply@company.com" type="email"></div>
+          <div class="fg s2"><label>Address</label><textarea class="fc">123 Warehouse Street, Industrial Zone, City 12345</textarea></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="fc-head">Warehouse — warehouse model</div>
+        <div class="form-grid">
+          <div class="fg"><label>Warehouse Name</label><input class="fc" value="My Warehouse"></div>
+          <div class="fg"><label>Short Code</label><input class="fc" value="WH"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="fc-head">Routing &amp; Operations</div>
+        <div class="form-grid">
+          <div class="fg"><label>Incoming Shipments</label>
+            <select class="fc"><option>Receive goods directly (1 step)</option><option>Unload → input → stock (2 steps)</option></select></div>
+          <div class="fg"><label>Outgoing Shipments</label>
+            <select class="fc"><option>Ship only (1 step)</option><option>Pick + Ship (2 steps)</option><option>Pick + Pack + Ship (3 steps)</option></select></div>
+          <div class="fg"><label>Lot / Serial Tracking</label>
+            <select class="fc"><option>Enabled — at move level</option><option>Disabled</option></select></div>
+          <div class="fg"><label>Putaway Strategy</label>
+            <select class="fc"><option>First Empty Location</option><option>Product-based Rules</option></select></div>
+        </div>
+        <div class="note-box warn" style="margin-top:12px">
+          <i class="ti ti-alert-triangle"></i>
+          <span>Changes to warehouse routing affect all future <strong>operation</strong> and <strong>stock_move</strong> records.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ══════════════════════ MODALS ══════════════════════ -->
+<div class="overlay" id="modal-lot" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title"><i class="ti ti-barcode"></i> New Lot / Serial Number</div>
+      <button class="m-close" onclick="closeModal(document.getElementById('modal-lot'))"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="m-body">
+      <div class="form-grid" style="gap:12px">
+        <div class="fg"><label>Company</label><select class="fc"><option>My Company</option></select></div>
+        <div class="fg"><label>Lot / Serial Name</label><input class="fc" placeholder="LOT/2024/…"></div>
+        <div class="fg"><label>Best Before Date</label><input class="fc" type="date"></div>
+        <div class="fg"><label>Expiration Date</label><input class="fc" type="date"></div>
+      </div>
+      <div class="note-box info" style="margin-top:14px">
+        <i class="ti ti-info-circle"></i>
+        <span>Linked to <strong>stock_quant</strong> &amp; <strong>stock_move</strong> entries automatically.</span>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn ghost" onclick="closeModal(document.getElementById('modal-lot'))">Cancel</button>
+      <button class="btn primary" onclick="saveLot()"><i class="ti ti-device-floppy"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-po" onclick="if(event.target===this)closeModal(this)">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title"><i class="ti ti-truck-delivery"></i> New Receipt / Purchase</div>
+      <button class="m-close" onclick="closeModal(document.getElementById('modal-po'))"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="m-body">
+      <div class="form-grid" style="gap:12px">
+        <div class="fg"><label>Supplier</label><select class="fc"><option>Supplier Alpha Ltd</option><option>Supplier Beta Corp</option></select></div>
+        <div class="fg"><label>Operation Type</label><select class="fc"><option>Receipts</option><option>Internal Transfer</option></select></div>
+        <div class="fg"><label>Scheduled Date</label><input class="fc" type="date"></div>
+        <div class="fg"><label>Source Location</label><select class="fc"><option>Vendors</option></select></div>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn ghost" onclick="closeModal(document.getElementById('modal-po'))">Cancel</button>
+      <button class="btn primary" onclick="createPO()"><i class="ti ti-plus"></i> Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast zone -->
+<div id="toast-zone"></div>
+
+<!-- ══════════════════════ SCRIPT ══════════════════════ -->
+<script>
+/* ── Router ── */
+const ROUTES = {
+  hub:             { bc:[['Overview','hub']] },
+  stock:           { bc:[['Inventory','hub'],['Stock','stock']] },
+  area:            { bc:[['Inventory','hub'],['Reporting',''],['Area History','area']] },
+  receipts:        { bc:[['Inventory','hub'],['Operations',''],['Receipts','receipts']] },
+  deliveries:      { bc:[['Inventory','hub'],['Operations',''],['Deliveries','deliveries']] },
+  'delivery-detail':{ bc:[['Inventory','hub'],['Deliveries','deliveries'],['WH/OUT/00020','']] },
+  transfers:       { bc:[['Inventory','hub'],['Operations',''],['Transfers','transfers']] },
+  lot:             { bc:[['Inventory','hub'],['Products',''],['Lot & Serial','lot']] },
+  purchase:        { bc:[['Purchase','hub'],['PO/00034','']] },
+  config:          { bc:[['Configuration',''],['Settings','config']] },
+};
+
+function go(key){
+  if(!ROUTES[key]) return;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.r===key));
+  const el = document.getElementById('page-'+key);
+  if(el) el.classList.add('active');
+  // breadcrumb
+  const r = ROUTES[key], bc = document.getElementById('breadcrumb');
+  bc.innerHTML = r.bc.map((seg,i)=>{
+    const isLast = i===r.bc.length-1;
+    if(isLast) return `<span class="bc-seg bc-active">${seg[0]}</span>`;
+    return `<span class="bc-seg" onclick="go('${seg[1]}')">${seg[0]}</span><span class="bc-arrow"><i class="ti ti-chevron-right" style="font-size:11px"></i></span>`;
+  }).join('');
+  document.getElementById('main').scrollTo(0,0);
+}
+
+/* ── Table filter ── */
+function filterTbl(id, q, cols){
+  const tbody = document.getElementById(id);
+  if(!tbody) return;
+  const lq = q.toLowerCase();
+  Array.from(tbody.rows).forEach(row=>{
+    const txt = cols.map(c=>row.cells[c]?.textContent||'').join(' ').toLowerCase();
+    row.style.display = (!lq||txt.includes(lq))?'':'none';
+  });
+}
+
+/* ── Checkbox all ── */
+function chkAll(id, master){
+  document.getElementById(id)?.querySelectorAll('input[type=checkbox]')
+    .forEach(c=>c.checked=master.checked);
+}
+
+/* ── Toast ── */
+const ICONS={success:'ti-circle-check',error:'ti-circle-x',info:'ti-info-circle'};
+function toast(msg, type='info'){
+  const zone = document.getElementById('toast-zone');
+  const t = document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<i class="ti ${ICONS[type]||'ti-info-circle'}"></i><span>${msg}</span>`;
+  zone.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(20px)';t.style.transition='.3s'},2800);
+  setTimeout(()=>t.remove(),3150);
+}
+
+/* ── Modals ── */
+function openModal(id){ document.getElementById(id).classList.add('open') }
+function closeModal(el){ el.classList.remove('open') }
+
+/* ── Business actions ── */
+function saveLot(){ closeModal(document.getElementById('modal-lot')); toast('Lot saved successfully','success') }
+function createPO(){ closeModal(document.getElementById('modal-po')); go('purchase'); toast('PO/00035 created — ready to confirm','success') }
+function valDelivery(){ toast('WH/OUT/00020 validated — stock_move records created','success'); setTimeout(()=>go('deliveries'),1400) }
+function confirmPO(){ toast('PO/00034 confirmed — operation & stock_move entries generated','success'); setTimeout(()=>go('receipts'),1400) }
+
+/* ── ApexCharts — Movement Line Chart (design-resources skill) ── */
+function initCharts(){
+  const base = {
+    chart:{
+      fontFamily:"'Inter',system-ui,sans-serif",
+      background:'transparent',
+      toolbar:{show:false},
+      animations:{enabled:true,easing:'easeinout',speed:600}
+    },
+    theme:{mode:'dark'},
+    grid:{borderColor:'#1e1e2a',strokeDashArray:4,padding:{left:0,right:0}},
+    tooltip:{theme:'dark'},
+  };
+
+  /* Line chart */
+  new ApexCharts(document.getElementById('chart-movement'),{
+    ...base,
+    chart:{...base.chart,type:'area',height:200},
+    series:[
+      {name:'Receipts',data:[12,18,10,24,15,20,18]},
+      {name:'Deliveries',data:[8,14,20,10,18,22,16]}
+    ],
+    colors:['#e03a3a','#3d8ef0'],
+    fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.25,opacityTo:.01,stops:[0,90,100]}},
+    stroke:{curve:'smooth',width:2},
+    xaxis:{
+      categories:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      labels:{style:{colors:'#6a6a88',fontSize:'10px'}},
+      axisBorder:{show:false},axisTicks:{show:false}
+    },
+    yaxis:{labels:{style:{colors:'#6a6a88',fontSize:'10px'}}},
+    legend:{show:false},
+    dataLabels:{enabled:false},
+  }).render();
+
+  /* Donut chart */
+  new ApexCharts(document.getElementById('chart-donut'),{
+    ...base,
+    chart:{...base.chart,type:'donut',height:220},
+    series:[530,200,140,310,22,74],
+    labels:['WH/Stock','WH/Shelf/A','WH/Shelf/B','WH/Shelf/C','WH/Input','WH/Output'],
+    colors:['#e03a3a','#3d8ef0','#2dc98d','#f5a623','#a78bfa','#f472b6'],
+    plotOptions:{pie:{donut:{size:'65%',labels:{show:true,total:{show:true,label:'Total Units',color:'#6a6a88',formatter:()=>'1,276'}}}}},
+    legend:{position:'right',labels:{colors:'#b0b0c8'},fontSize:'11px'},
+    dataLabels:{enabled:false},
+    stroke:{show:false},
+  }).render();
+}
+
+/* ── Boot ── */
+go('hub');
+// Wait for ApexCharts to load
+if(typeof ApexCharts!=='undefined') initCharts();
+else window.addEventListener('load',initCharts);
+</script>
+</body>
+</html>

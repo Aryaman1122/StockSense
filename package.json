@@ -1,0 +1,35 @@
+{
+  "name": "stockflow-frontend",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "gen:types": "openapi-typescript openapi.json -o src/lib/api-schema.d.ts"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "@tabler/icons-react": "^3.48.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.89.0",
+    "recharts": "^3.10.1",
+    "sonner": "^2.0.8",
+    "swr": "^2.5.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.6.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "openapi-typescript": "^7.13.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3"
+  }
+}

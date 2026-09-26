@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Odoo Stock — Wireframe Flow</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      color: #e5e5e5;
+      overflow: auto;
+    }
+
+    /* ─── Canvas ────────────────────────────────────────────────── */
+    #canvas {
+      position: relative;
+      width: 4200px;
+      height: 3000px;
+    }
+
+    svg#arrows {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Screen Card ───────────────────────────────────────────── */
+    .screen {
+      position: absolute;
+      background: #161616;
+      border: 1.5px solid #333;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.7);
+      z-index: 1;
+      min-width: 320px;
+    }
+
+    /* Title bar */
+    .screen-bar {
+      background: #1e1e1e;
+      border-bottom: 1.5px solid #333;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .screen-bar .dots { display:flex; gap:5px; }
+    .dot { width:9px; height:9px; border-radius:50%; }
+    .dot.r { background:#c0392b; }
+    .dot.y { background:#d4ac0d; }
+    .dot.g { background:#1e8449; }
+    .screen-bar .title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #aaa;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      flex: 1;
+      text-align: center;
+    }
+    .screen-bar .badge {
+      font-size: 9px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #888;
+    }
+
+    /* Breadcrumb nav */
+    .breadcrumb {
+      background: #111;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 5px 12px;
+      font-size: 10px;
+      color: #666;
+    }
+    .breadcrumb span { color: #888; }
+    .breadcrumb .active { color: #c0392b; }
+
+    /* Toolbar */
+    .toolbar {
+      background: #141414;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 6px 12px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 5px;
+      border: 1.5px solid #333;
+      background: #1e1e1e;
+      color: #ccc;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn.primary {
+      background: #c0392b;
+      border-color: #c0392b;
+      color: #fff;
+      font-weight: 600;
+    }
+    .btn.success {
+      background: #1e6e3f;
+      border-color: #2ecc71;
+      color: #2ecc71;
+    }
+    .btn.ghost {
+      background: transparent;
+      border-color: #333;
+      color: #777;
+    }
+    .toolbar .sep { width:1px; height:18px; background:#2a2a2a; margin:0 2px; }
+    .search-box {
+      margin-left: auto;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 10px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 120px;
+    }
+
+    /* Stat tiles */
+    .stat-row {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .stat-tile {
+      flex: 1;
+      padding: 10px 12px;
+      border-right: 1px solid #2a2a2a;
+      text-align: center;
+    }
+    .stat-tile:last-child { border-right: none; }
+    .stat-tile .num { font-size: 18px; font-weight: 700; color: #e5e5e5; }
+    .stat-tile .label { font-size: 9px; color: #666; margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+    .stat-tile .sub { font-size: 9px; color: #c0392b; margin-top:1px; }
+
+    /* Table */
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl thead tr { background: #111; border-bottom: 1.5px solid #2a2a2a; }
+    .tbl th {
+      font-size: 9px;
+      font-weight: 600;
+      color: #666;
+      text-align: left;
+      padding: 6px 10px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .tbl td {
+      font-size: 10px;
+      color: #ccc;
+      padding: 7px 10px;
+      border-bottom: 1px solid #1e1e1e;
+    }
+    .tbl tbody tr:hover { background: #1a1a1a; }
+    .tbl .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 600;
+    }
+    .tag.ready   { background:#1e3a2f; color:#2ecc71; border:1px solid #1e6e3f; }
+    .tag.done    { background:#1a2a4a; color:#5dade2; border:1px solid #2980b9; }
+    .tag.pending { background:#3b2800; color:#f39c12; border:1px solid #d68910; }
+    .tag.draft   { background:#2a2a2a; color:#888; border:1px solid #444; }
+
+    /* Form */
+    .form-body { padding: 14px 16px; display:flex; flex-direction:column; gap:10px; }
+    .form-group { display:flex; flex-direction:column; gap:4px; }
+    .form-group label { font-size: 9px; color: #777; text-transform: uppercase; letter-spacing: .5px; font-weight:600; }
+    .form-input {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 5px;
+      padding: 6px 10px;
+      font-size: 10px;
+      color: #ccc;
+    }
+    .form-input.placeholder { color: #444; }
+    .form-row { display:flex; gap:10px; }
+    .form-row .form-group { flex:1; }
+    .form-select {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 5px;
+      padding: 6px 10px;
+      font-size: 10px;
+      color: #ccc;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .form-select::after { content: '▾'; color:#666; }
+
+    /* Section label */
+    .section-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      padding: 8px 12px 4px;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    /* Annotation callout */
+    .callout {
+      position: absolute;
+      background: #1a1a1a;
+      border: 1px dashed #444;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 9px;
+      color: #888;
+      max-width: 180px;
+      line-height: 1.5;
+      z-index: 2;
+    }
+    .callout strong { color: #c0392b; }
+
+    /* Sidebar (ERD-style) */
+    .sidebar { padding:12px; }
+    .erd-entity {
+      border: 1.5px solid #333;
+      border-radius: 7px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .erd-header {
+      background: #c0392b22;
+      border-bottom: 1px solid #c0392b44;
+      padding: 5px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #c0392b;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .erd-row {
+      display:flex; align-items:center;
+      padding: 4px 10px;
+      border-bottom: 1px solid #1e1e1e;
+      font-size: 9px;
+    }
+    .erd-row:last-child { border-bottom:none; }
+    .erd-type { color: #555; width: 38px; flex-shrink:0; }
+    .erd-name { color: #ccc; flex:1; }
+    .erd-badge { font-size:8px; background:#2a2a2a; border:1px solid #444; border-radius:3px; padding:1px 5px; color:#888; }
+    .erd-badge.pk { border-color:#c0392b55; color:#c0392b; background:#c0392b11; }
+    .erd-badge.fk { border-color:#2980b955; color:#5dade2; background:#2980b911; }
+
+    /* Hub card (Deployment center) */
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: #1e1e1e;
+      border-top: 1px solid #2a2a2a;
+    }
+    .hub-cell {
+      background: #161616;
+      padding: 14px 12px;
+      display:flex; flex-direction:column; align-items:center; gap:6px;
+      cursor:pointer;
+      transition: background .15s;
+    }
+    .hub-cell:hover { background: #1c1c1c; }
+    .hub-cell .icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1.5px solid #333;
+      background: #1e1e1e;
+      display:flex; align-items:center; justify-content:center;
+      font-size: 16px;
+    }
+    .hub-cell .hub-label { font-size: 10px; color: #ccc; font-weight:600; }
+    .hub-cell .hub-count { font-size: 9px; color: #555; }
+    .hub-cell.active .icon { background:#c0392b22; border-color:#c0392b55; }
+    .hub-cell.active .hub-label { color: #c0392b; }
+
+    /* Pagination footer */
+    .table-footer {
+      padding: 6px 12px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-top: 1px solid #1e1e1e;
+    }
+    .table-footer span { font-size:9px; color:#555; }
+    .page-btns { display:flex; gap:4px; }
+    .page-btn {
+      width:22px; height:22px;
+      border-radius:4px; border:1px solid #2a2a2a;
+      background:#111; color:#888;
+      font-size:9px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .page-btn.active { background:#c0392b; border-color:#c0392b; color:#fff; }
+
+    /* Legend */
+    #legend {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 12px 16px;
+      z-index: 999;
+      font-size: 10px;
+      color: #888;
+      min-width: 160px;
+    }
+    #legend h4 { color:#ccc; font-size:11px; margin-bottom:8px; }
+    .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+    .legend-line { width:30px; height:2px; }
+    .legend-line.nav  { background:#c0392b; }
+    .legend-line.data { background:#2980b9; border-top:1px dashed #2980b9; background:none; border:none; border-top:2px dashed #2980b9; }
+    .legend-line.rel  { background:#2ecc71; opacity:.6; }
+
+    /* Flow label */
+    .flow-label {
+      position:absolute;
+      font-size:9px;
+      color:#c0392b;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      z-index:2;
+      background:#0d0d0d;
+      padding:1px 5px;
+      border-radius:3px;
+    }
+
+    /* Page header */
+    #page-header {
+      position: sticky;
+      top:0; left:0;
+      width:100%;
+      background: #0d0d0d;
+      border-bottom: 1px solid #1e1e1e;
+      padding: 12px 24px;
+      display:flex; align-items:center; gap:16px;
+      z-index: 999;
+    }
+    #page-header h1 { font-size:14px; font-weight:700; color:#e5e5e5; }
+    #page-header span { font-size:11px; color:#555; }
+    .pill {
+      font-size:9px;
+      padding:3px 10px;
+      border-radius:20px;
+      background:#c0392b22;
+      border:1px solid #c0392b44;
+      color:#c0392b;
+      font-weight:600;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Sticky Header ──────────────────────────────────────────── -->
+<div id="page-header">
+  <div style="width:28px;height:28px;border-radius:7px;background:#c0392b;display:flex;align-items:center;justify-content:center;font-size:14px;">📦</div>
+  <h1>Odoo Stock & Inventory</h1>
+  <span>Wireframe Flow Diagram</span>
+  <div class="pill">UX SPEC v1.0</div>
+  <span style="margin-left:auto;font-size:9px;color:#444;">9 Screens · 6 Entities · Scroll to explore →</span>
+</div>
+
+<!-- ─── Canvas ────────────────────────────────────────────────── -->
+<div id="canvas">
+
+<!-- ════════════════════════════════════════════
+     SVG ARROWS
+════════════════════════════════════════════ -->
+<svg id="arrows" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#c0392b"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#2980b9"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#27ae60"/>
+    </marker>
+  </defs>
+
+  <!-- Stock List → Deployment Hub -->
+  <path d="M 540,350 C 640,350 680,620 760,660"
+    stroke="#c0392b" stroke-width="1.5" fill="none" stroke-dasharray="0"
+    marker-end="url(#arrow-red)"/>
+
+  <!-- Deployment Hub → Receipts -->
+  <path d="M 900,720 C 900,820 700,900 630,960"
+    stroke="#c0392b" stroke-width="1.5" fill="none"
+    marker-end="url(#arrow-red)"/>
+
+  <!-- Deployment Hub → Area History (right) -->
+  <path d="M 1080,680 C 1300,650 1700,500 1900,430"
+    stroke="#c0392b" stroke-width="1.5" fill="none"
+    marker-end="url(#arrow-red)"/>
+
+  <!-- Deployment Hub → Delivery List (bottom-right) -->
+  <path d="M 1080,700 C 1400,720 1800,900 1900,980"
+    stroke="#c0392b" stroke-width="1.5" fill="none"
+    marker-end="url(#arrow-red)"/>
+
+  <!-- Delivery List → Delivery Detail -->
+  <path d="M 2280,1050 C 2400,1050 2500,1100 2560,1150"
+    stroke="#c0392b" stroke-width="1.5" fill="none"
+    marker-end="url(#arrow-red)"/>
+
+  <!-- Receipts → Operation Form -->
+  <path d="M 630,1300 C 600,1500 600,1700 650,1780"
+    stroke="#c0392b" stroke-width="1.5" fill="none"
+    marker-end="url(#arrow-red)"/>
+
+  <!-- Stock List → Lot/Serial Form (top) -->
+  <path d="M 400,150 C 400,80 900,60 960,80"
+    stroke="#2980b9" stroke-width="1.5" fill="none" stroke-dasharray="5,3"
+    marker-end="url(#arrow-blue)"/>
+
+  <!-- Lot/Serial → Membership Config -->
+  <path d="M 1260,200 C 1350,200 1450,160 1500,120"
+    stroke="#2980b9" stroke-width="1.5" fill="none" stroke-dasharray="5,3"
+    marker-end="url(#arrow-blue)"/>
+
+  <!-- ERD → Hub (data relationship) -->
+  <path d="M 240,620 C 500,620 680,660 760,670"
+    stroke="#27ae60" stroke-width="1" fill="none" stroke-dasharray="3,4" opacity=".5"
+    marker-end="url(#arrow-green)"/>
+</svg>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 1 — STOCK LIST (top-left)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-stock" style="left:60px;top:160px;width:480px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Inventory · Stock List</div>
+    <div class="badge">LIST VIEW</div>
+  </div>
+  <div class="breadcrumb">Inventory / <span class="active">Stock</span></div>
+  <div class="toolbar">
+    <button class="btn primary">+ New</button>
+    <div class="sep"></div>
+    <button class="btn ghost">Import</button>
+    <button class="btn ghost">Export</button>
+    <div class="sep"></div>
+    <button class="btn ghost">Filters ▾</button>
+    <button class="btn ghost">Group By ▾</button>
+    <div class="search-box">🔍 Search products…</div>
+  </div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th><input type="checkbox" style="accent-color:#c0392b"/></th>
+        <th>Product</th>
+        <th>On Hand</th>
+        <th>Free to Use</th>
+        <th>Location</th>
+        <th>UoM</th>
+        <th>Putaway</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">Product A</td>
+        <td>142</td><td>130</td>
+        <td style="color:#888;">WH/Stock</td>
+        <td style="color:#888;">Units</td>
+        <td style="color:#2ecc71;font-size:9px;">✔ Active</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">Product B</td>
+        <td>58</td><td>58</td>
+        <td style="color:#888;">WH/Shelf/A</td>
+        <td style="color:#888;">kg</td>
+        <td style="color:#555;font-size:9px;">— None</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">Product C</td>
+        <td>0</td><td>0</td>
+        <td style="color:#888;">WH/Stock</td>
+        <td style="color:#888;">Units</td>
+        <td style="color:#d4ac0d;font-size:9px;">⚠ Missing</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">Product D</td>
+        <td>310</td><td>310</td>
+        <td style="color:#888;">WH/Shelf/B</td>
+        <td style="color:#888;">Units</td>
+        <td style="color:#2ecc71;font-size:9px;">✔ Active</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="table-footer">
+    <span>1-4 of 38 records</span>
+    <div class="page-btns">
+      <div class="page-btn">‹</div>
+      <div class="page-btn active">1</div>
+      <div class="page-btn">2</div>
+      <div class="page-btn">3</div>
+      <div class="page-btn">›</div>
+    </div>
+  </div>
+  <div style="padding:8px 12px;border-top:1px solid #1e1e1e;background:#0f0f0f;">
+    <div style="font-size:9px;color:#555;font-style:italic;">⚠ You need to add a putaway rule from here. Use the <span style="color:#c0392b">Putaway Rules</span> button.</div>
+  </div>
+</div>
+
+<!-- flow label -->
+<div class="flow-label" style="left:530px;top:320px;">① click row</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 2 — LOT / SERIAL NUMBER FORM (top-center)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-lot" style="left:960px;top:60px;width:360px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Lot / Serial Number</div>
+    <div class="badge">FORM</div>
+  </div>
+  <div class="breadcrumb">Inventory / Products / <span class="active">Lot & Serial</span></div>
+  <div class="toolbar">
+    <button class="btn primary">Save</button>
+    <button class="btn ghost">Discard</button>
+    <div class="sep"></div>
+    <button class="btn ghost">Traceability</button>
+  </div>
+  <div class="form-body">
+    <div class="form-group">
+      <label>Company</label>
+      <div class="form-select">My Company <span></span></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Lot/Serial Name</label>
+        <div class="form-input">LOT/2024/001</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Best Before Date</label>
+        <div class="form-input placeholder">mm/dd/yyyy</div>
+      </div>
+      <div class="form-group">
+        <label>Expiration Date</label>
+        <div class="form-input placeholder">mm/dd/yyyy</div>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#555;padding:6px 0;border-top:1px solid #1e1e1e;margin-top:4px;">
+      This form tracks the creation of lot/serial conditions above.<br/>
+      <span style="color:#2980b9;">Linked to stock_quant &amp; stock_move entries.</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 3 — MEMBERSHIP / CONFIG FORM (top-right)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-membership" style="left:1380px;top:60px;width:340px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Membership / Config</div>
+    <div class="badge">SETTINGS</div>
+  </div>
+  <div class="breadcrumb">Settings / <span class="active">Membership</span></div>
+  <div class="toolbar">
+    <button class="btn primary">Save</button>
+    <button class="btn ghost">Cancel</button>
+  </div>
+  <div class="form-body">
+    <div class="form-group">
+      <label>Title</label>
+      <div class="form-input">Inventory Configuration</div>
+    </div>
+    <div class="form-group">
+      <label>Send From</label>
+      <div class="form-select">noreply@company.com <span></span></div>
+    </div>
+    <div class="form-group">
+      <label>Address</label>
+      <div class="form-input" style="height:50px;display:flex;align-items:flex-start;padding-top:6px;color:#555;">123 Warehouse St, City…</div>
+    </div>
+    <div style="font-size:9px;color:#555;padding-top:6px;border-top:1px solid #1e1e1e;">
+      Global notification &amp; sender config for all stock operations.
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     ERD / DATA MODEL LEGEND (left side)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-erd" style="left:20px;top:560px;width:230px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Data Model</div>
+    <div class="badge">ERD</div>
+  </div>
+  <div class="sidebar">
+    <div class="erd-entity">
+      <div class="erd-header">warehouse</div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">id</span><span class="erd-badge pk">PK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">name</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">short_code</span></div>
+    </div>
+    <div style="font-size:9px;color:#555;text-align:center;margin:-2px 0 4px;letter-spacing:.3px;">▼ contains</div>
+    <div class="erd-entity">
+      <div class="erd-header">location</div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">id</span><span class="erd-badge pk">PK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">warehouse_id</span><span class="erd-badge fk">FK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">name</span></div>
+    </div>
+    <div style="font-size:9px;color:#555;text-align:center;margin:-2px 0 4px;">▼ holds</div>
+    <div class="erd-entity">
+      <div class="erd-header">stock_quant</div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">product_id</span><span class="erd-badge fk">FK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">location_id</span><span class="erd-badge fk">FK</span></div>
+      <div class="erd-row"><span class="erd-type">int</span><span class="erd-name">on_hand</span></div>
+      <div class="erd-row"><span class="erd-type">int</span><span class="erd-name">free_to_use</span></div>
+    </div>
+    <div style="font-size:9px;color:#555;text-align:center;margin:-2px 0 4px;">● product / ● operation</div>
+    <div class="erd-entity">
+      <div class="erd-header">product</div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">id</span><span class="erd-badge pk">PK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">sku</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">uom</span></div>
+    </div>
+    <div style="font-size:9px;color:#555;text-align:center;margin:-2px 0 4px;">▼ moves → stock_move</div>
+    <div class="erd-entity">
+      <div class="erd-header">operation</div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">id</span><span class="erd-badge pk">PK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">reference</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">type</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">status</span></div>
+    </div>
+    <div style="font-size:9px;color:#555;text-align:center;margin:-2px 0 4px;">▼ creates</div>
+    <div class="erd-entity">
+      <div class="erd-header">stock_move</div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">id</span><span class="erd-badge pk">PK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">operation_id</span><span class="erd-badge fk">FK</span></div>
+      <div class="erd-row"><span class="erd-type">string</span><span class="erd-name">product_id</span><span class="erd-badge fk">FK</span></div>
+      <div class="erd-row"><span class="erd-type">int</span><span class="erd-name">quantity</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 4 — DEPLOYMENT HUB (center)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-hub" style="left:760px;top:560px;width:400px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Operations Hub</div>
+    <div class="badge">DASHBOARD</div>
+  </div>
+  <div class="breadcrumb">Inventory / <span class="active">Operations</span></div>
+
+  <!-- stat tiles -->
+  <div class="stat-row">
+    <div class="stat-tile">
+      <div class="num">12</div>
+      <div class="label">Receipts</div>
+      <div class="sub">3 ready</div>
+    </div>
+    <div class="stat-tile">
+      <div class="num">5</div>
+      <div class="label">Transfers</div>
+      <div class="sub">2 ready</div>
+    </div>
+    <div class="stat-tile">
+      <div class="num">8</div>
+      <div class="label">Pick</div>
+      <div class="sub">1 ready</div>
+    </div>
+    <div class="stat-tile">
+      <div class="num">20</div>
+      <div class="label">Deliveries</div>
+      <div class="sub">7 ready</div>
+    </div>
+  </div>
+
+  <!-- nav grid -->
+  <div class="hub-grid">
+    <div class="hub-cell active">
+      <div class="icon">📥</div>
+      <div class="hub-label">Receipts</div>
+      <div class="hub-count">12 operations</div>
+    </div>
+    <div class="hub-cell">
+      <div class="icon">🔀</div>
+      <div class="hub-label">Transfers</div>
+      <div class="hub-count">5 operations</div>
+    </div>
+    <div class="hub-cell">
+      <div class="icon">🗂️</div>
+      <div class="hub-label">Pick Entries</div>
+      <div class="hub-count">8 operations</div>
+    </div>
+    <div class="hub-cell">
+      <div class="icon">🚚</div>
+      <div class="hub-label">Delivery</div>
+      <div class="hub-count">20 operations</div>
+    </div>
+  </div>
+
+  <!-- action row -->
+  <div class="toolbar" style="border-top:1px solid #2a2a2a;border-bottom:none;padding:10px 12px;gap:8px;">
+    <button class="btn ghost" style="flex:1;text-align:center;">⚙ Manage Rules</button>
+    <button class="btn ghost" style="flex:1;text-align:center;">💰 Price Update</button>
+    <button class="btn ghost" style="flex:1;text-align:center;">📊 Fin. Entries</button>
+  </div>
+</div>
+
+<!-- flow labels around hub -->
+<div class="flow-label" style="left:900px;top:830px;">② Receipts</div>
+<div class="flow-label" style="left:1100px;top:630px;">③ Area History</div>
+<div class="flow-label" style="left:1100px;top:730px;">④ Delivery</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 5 — AREA / LOCATION HISTORY (right-top)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-area" style="left:1900px;top:340px;width:460px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Area History</div>
+    <div class="badge">LIST VIEW</div>
+  </div>
+  <div class="breadcrumb">Inventory / Reporting / <span class="active">Area History</span></div>
+  <div class="toolbar">
+    <button class="btn ghost">Filters ▾</button>
+    <button class="btn ghost">Group By ▾</button>
+    <div class="search-box">🔍 Search location…</div>
+  </div>
+  <div style="padding:6px 12px;font-size:9px;color:#555;border-bottom:1px solid #1e1e1e;background:#0f0f0f;">
+    ℹ When user clicks on <strong style="color:#ccc;">Area History</strong> — by default loads on <strong style="color:#c0392b;">List View</strong>
+  </div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Location</th>
+        <th>Product</th>
+        <th>Qty Done</th>
+        <th>Reference</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color:#888;">09/24/2024</td>
+        <td>WH/Stock</td>
+        <td>Product A</td>
+        <td>+50</td>
+        <td style="color:#888;">WH/IN/00012</td>
+        <td><span class="tag done">Done</span></td>
+      </tr>
+      <tr>
+        <td style="color:#888;">09/23/2024</td>
+        <td>WH/Shelf/A</td>
+        <td>Product B</td>
+        <td>-20</td>
+        <td style="color:#888;">WH/OUT/00008</td>
+        <td><span class="tag done">Done</span></td>
+      </tr>
+      <tr>
+        <td style="color:#888;">09/22/2024</td>
+        <td>WH/Stock</td>
+        <td>Product C</td>
+        <td>+100</td>
+        <td style="color:#888;">WH/IN/00011</td>
+        <td><span class="tag ready">Ready</span></td>
+      </tr>
+      <tr>
+        <td style="color:#888;">09/21/2024</td>
+        <td>WH/Shelf/B</td>
+        <td>Product D</td>
+        <td>-5</td>
+        <td style="color:#888;">WH/INT/00004</td>
+        <td><span class="tag pending">Pending</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="table-footer">
+    <span>1-4 of 142 moves</span>
+    <div class="page-btns">
+      <div class="page-btn">‹</div>
+      <div class="page-btn active">1</div>
+      <div class="page-btn">2</div>
+      <div class="page-btn">›</div>
+    </div>
+  </div>
+  <div style="padding:8px 12px;background:#0f0f0f;border-top:1px solid #1e1e1e;">
+    <div style="font-size:9px;color:#555;font-style:italic;">→ Allows user to see all stock movements for a location. Right-click row for detail view.</div>
+  </div>
+</div>
+
+<!-- annotation -->
+<div class="callout" style="left:2380px;top:360px;">
+  <strong>Default:</strong> List view on load.<br/>
+  Allows viewing all moves in/out of each area.<br/>
+  Filter by date, product, operation type.
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 6 — RECEIPTS / TRANSFERS LIST (center-left)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-receipts" style="left:280px;top:960px;width:500px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Receipts — Manage</div>
+    <div class="badge">LIST VIEW</div>
+  </div>
+  <div class="breadcrumb">Inventory / Operations / <span class="active">Receipts</span></div>
+  <div class="toolbar">
+    <button class="btn primary">+ Create</button>
+    <div class="sep"></div>
+    <button class="btn success">✔ Validate</button>
+    <div class="sep"></div>
+    <button class="btn ghost">Filters ▾</button>
+    <button class="btn ghost">Group By ▾</button>
+    <div class="search-box">🔍 Search…</div>
+  </div>
+  <div style="padding:5px 12px;font-size:9px;color:#555;border-bottom:1px solid #1e1e1e;background:#0f0f0f;">
+    ℹ Allows user to see the list of <strong style="color:#ccc;">purchases made</strong> — operations available while in <strong style="color:#c0392b;">ready</strong> state.
+  </div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th><input type="checkbox" style="accent-color:#c0392b"/></th>
+        <th>Reference</th>
+        <th>Contact</th>
+        <th>Scheduled Date</th>
+        <th>Source Ref.</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">WH/IN/00012</td>
+        <td>Supplier A</td>
+        <td style="color:#888;">09/30/2024</td>
+        <td style="color:#888;">PO/00034</td>
+        <td><span class="tag ready">Ready</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">WH/IN/00011</td>
+        <td>Supplier B</td>
+        <td style="color:#888;">09/28/2024</td>
+        <td style="color:#888;">PO/00031</td>
+        <td><span class="tag done">Done</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">WH/IN/00010</td>
+        <td>Supplier C</td>
+        <td style="color:#888;">10/02/2024</td>
+        <td style="color:#888;">PO/00029</td>
+        <td><span class="tag pending">Pending</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">WH/IN/00009</td>
+        <td>Supplier A</td>
+        <td style="color:#888;">09/25/2024</td>
+        <td style="color:#888;">PO/00028</td>
+        <td><span class="tag draft">Draft</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="table-footer">
+    <span>1-4 of 12 receipts</span>
+    <div class="page-btns">
+      <div class="page-btn">‹</div>
+      <div class="page-btn active">1</div>
+      <div class="page-btn">2</div>
+      <div class="page-btn">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- annotation -->
+<div class="callout" style="left:50px;top:1000px;">
+  <strong>Note:</strong> After user clicks on receipt operations — default load on <strong>List View</strong>.<br/>
+  Actions available only when status = <strong style="color:#2ecc71;">Ready</strong>.
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 7 — DELIVERY LIST (right-center)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-delivery-list" style="left:1900px;top:960px;width:460px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Delivery Orders</div>
+    <div class="badge">LIST VIEW</div>
+  </div>
+  <div class="breadcrumb">Inventory / Operations / <span class="active">Delivery</span></div>
+  <div class="toolbar">
+    <button class="btn primary">+ Create</button>
+    <div class="sep"></div>
+    <button class="btn success">✔ Validate</button>
+    <div class="sep"></div>
+    <button class="btn ghost">Filters ▾</button>
+    <div class="search-box">🔍 Search…</div>
+  </div>
+  <div style="padding:5px 12px;font-size:9px;color:#555;border-bottom:1px solid #1e1e1e;background:#0f0f0f;">
+    ℹ When user clicks on Delivery operations — default load on <strong style="color:#c0392b;">List View</strong>. Click row to open detail.
+  </div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th><input type="checkbox" style="accent-color:#c0392b"/></th>
+        <th>Reference</th>
+        <th>Contact</th>
+        <th>Sched. Date</th>
+        <th>Source</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">WH/OUT/00020</td>
+        <td>Customer A</td>
+        <td style="color:#888;">09/28/2024</td>
+        <td style="color:#888;">SO/00041</td>
+        <td><span class="tag ready">Ready</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">WH/OUT/00019</td>
+        <td>Customer B</td>
+        <td style="color:#888;">09/27/2024</td>
+        <td style="color:#888;">SO/00040</td>
+        <td><span class="tag done">Done</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" style="accent-color:#c0392b"/></td>
+        <td style="color:#e5e5e5;font-weight:600;">WH/OUT/00018</td>
+        <td>Customer C</td>
+        <td style="color:#888;">09/30/2024</td>
+        <td style="color:#888;">SO/00039</td>
+        <td><span class="tag pending">Pending</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="table-footer">
+    <span>1-3 of 20 deliveries</span>
+    <div class="page-btns">
+      <div class="page-btn">‹</div>
+      <div class="page-btn active">1</div>
+      <div class="page-btn">2</div>
+      <div class="page-btn">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- annotation -->
+<div class="callout" style="left:2380px;top:970px;">
+  <strong>Default:</strong> List view on load.<br/>
+  Click row → opens Delivery Detail form.<br/>
+  Validate only when status = Ready.
+</div>
+
+<!-- flow label -->
+<div class="flow-label" style="left:2370px;top:1060px;">⑤ click row</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 8 — DELIVERY DETAIL FORM (far right)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-delivery-detail" style="left:2560px;top:1080px;width:420px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Delivery Detail</div>
+    <div class="badge">FORM</div>
+  </div>
+  <div class="breadcrumb">Delivery / <span class="active">WH/OUT/00020</span></div>
+  <div class="toolbar">
+    <button class="btn primary">✔ Validate</button>
+    <button class="btn ghost">Return</button>
+    <div class="sep"></div>
+    <button class="btn ghost">Print</button>
+    <div class="sep"></div>
+    <div style="margin-left:auto;"><span class="tag ready" style="padding:4px 10px;">Ready</span></div>
+  </div>
+  <div class="form-body" style="padding:12px;">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Order Date</label>
+        <div class="form-input">09/26/2024</div>
+      </div>
+      <div class="form-group">
+        <label>Scheduled Date</label>
+        <div class="form-input">09/28/2024</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Source Document</label>
+        <div class="form-input">SO/00041</div>
+      </div>
+      <div class="form-group">
+        <label>Dest. Location</label>
+        <div class="form-select">Customer Locations <span></span></div>
+      </div>
+    </div>
+    <div class="section-label" style="margin: 0 -12px;padding:8px 12px;">Product Lines</div>
+    <table class="tbl" style="margin:0 -12px;width:calc(100% + 24px);">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Demand</th>
+          <th>Done</th>
+          <th>Unit Price</th>
+          <th>Lot/Serial</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Product A</td>
+          <td>10</td>
+          <td style="color:#2ecc71;">10</td>
+          <td>$42.00</td>
+          <td style="color:#888;">LOT/001</td>
+        </tr>
+        <tr>
+          <td>Product B</td>
+          <td>5</td>
+          <td style="color:#d4ac0d;">3</td>
+          <td>$18.50</td>
+          <td style="color:#888;">—</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="font-size:9px;color:#555;padding-top:8px;border-top:1px solid #1e1e1e;">
+      → Save the delivery location in step — linked to <span style="color:#2980b9;">stock_move</span> records.
+    </div>
+  </div>
+</div>
+
+<!-- annotation -->
+<div class="callout" style="left:3000px;top:1100px;">
+  <strong>On validate:</strong> Creates <strong>stock_move</strong> records per line.<br/>
+  Updates <strong>stock_quant.on_hand</strong> for each location.
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SCREEN 9 — OPERATION / PURCHASE ORDER FORM (bottom-center)
+════════════════════════════════════════════ -->
+<div class="screen" id="s-operation" style="left:400px;top:1760px;width:520px;">
+  <div class="screen-bar">
+    <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">Operation / Purchase Order</div>
+    <div class="badge">FORM</div>
+  </div>
+  <div class="breadcrumb">Purchase / <span class="active">PO/00034</span></div>
+  <div class="toolbar">
+    <button class="btn primary">Confirm Order</button>
+    <button class="btn ghost">Send by Email</button>
+    <div class="sep"></div>
+    <button class="btn ghost">Print RFQ</button>
+    <div style="margin-left:auto;"><span class="tag pending" style="padding:4px 10px;">Pending</span></div>
+  </div>
+
+  <!-- status steps -->
+  <div style="padding:10px 14px;border-bottom:1px solid #1e1e1e;display:flex;gap:0;align-items:center;">
+    <div style="font-size:9px;color:#c0392b;font-weight:700;border:1px solid #c0392b44;background:#c0392b11;padding:4px 12px;border-radius:4px;">Draft RFQ</div>
+    <div style="flex:1;height:1px;background:#333;margin:0 6px;"></div>
+    <div style="font-size:9px;color:#666;border:1px solid #333;background:#1a1a1a;padding:4px 12px;border-radius:4px;">Confirmed</div>
+    <div style="flex:1;height:1px;background:#333;margin:0 6px;"></div>
+    <div style="font-size:9px;color:#666;border:1px solid #333;background:#1a1a1a;padding:4px 12px;border-radius:4px;">Received</div>
+    <div style="flex:1;height:1px;background:#333;margin:0 6px;"></div>
+    <div style="font-size:9px;color:#666;border:1px solid #333;background:#1a1a1a;padding:4px 12px;border-radius:4px;">Locked</div>
+  </div>
+
+  <div class="form-body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Vendor</label>
+        <div class="form-select">Supplier A <span></span></div>
+      </div>
+      <div class="form-group">
+        <label>Reference</label>
+        <div class="form-input">PO/00034</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Order Date</label>
+        <div class="form-input">09/26/2024</div>
+      </div>
+      <div class="form-group">
+        <label>Delivery Count</label>
+        <div class="form-input" style="color:#c0392b;font-weight:600;">1 delivery</div>
+      </div>
+    </div>
+    <div class="section-label" style="margin:0 -16px;padding:8px 16px;">Order Lines</div>
+    <table class="tbl" style="margin:0 -16px;width:calc(100% + 32px);">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Tax</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Product A</td><td>50</td><td>$40.00</td><td>15%</td>
+          <td style="color:#e5e5e5;font-weight:600;">$2,300</td>
+        </tr>
+        <tr>
+          <td>Product B</td><td>20</td><td>$18.00</td><td>15%</td>
+          <td style="color:#e5e5e5;font-weight:600;">$414</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="display:flex;justify-content:flex-end;padding:6px 0;border-top:1px solid #1e1e1e;">
+      <div style="font-size:11px;color:#e5e5e5;font-weight:700;">Total: $2,714.00</div>
+    </div>
+    <div style="font-size:9px;color:#555;border-top:1px solid #1e1e1e;padding-top:6px;">
+      → Confirming this order creates an <span style="color:#2980b9;">operation</span> record and generates <span style="color:#2980b9;">stock_move</span> entries per line.
+    </div>
+  </div>
+</div>
+
+<!-- annotation -->
+<div class="callout" style="left:100px;top:1800px;">
+  <strong>After user clicks on receipt operations.</strong><br/>
+  Match against Purchase Order lines.<br/>
+  Source doc links back to Receipts list.
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     FLOW LABELS / SECTION HEADERS
+════════════════════════════════════════════ -->
+<div style="position:absolute;left:60px;top:130px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ① STOCK LIST VIEW
+</div>
+<div style="position:absolute;left:760px;top:530px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ② OPERATIONS HUB (Deployment Center)
+</div>
+<div style="position:absolute;left:1900px;top:310px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ③ AREA / LOCATION HISTORY
+</div>
+<div style="position:absolute;left:1900px;top:930px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ④ DELIVERY LIST
+</div>
+<div style="position:absolute;left:2560px;top:1050px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ⑤ DELIVERY DETAIL
+</div>
+<div style="position:absolute;left:280px;top:930px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ⑥ RECEIPTS LIST
+</div>
+<div style="position:absolute;left:400px;top:1730px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ⑦ OPERATION / PURCHASE FORM
+</div>
+<div style="position:absolute;left:960px;top:30px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ⑧ LOT / SERIAL FORM
+</div>
+<div style="position:absolute;left:1380px;top:30px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  ⑨ MEMBERSHIP / CONFIG
+</div>
+<div style="position:absolute;left:20px;top:530px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;">
+  DATA MODEL (ERD)
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     LEGEND (fixed)
+════════════════════════════════════════════ -->
+<div id="legend">
+  <h4>Flow Legend</h4>
+  <div class="legend-item">
+    <div class="legend-line nav"></div>
+    <span>Navigation flow</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-line data"></div>
+    <span>Data reference</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-line rel"></div>
+    <span>ERD relation</span>
+  </div>
+  <div style="margin-top:8px;padding-top:8px;border-top:1px solid #1e1e1e;">
+    <div style="font-size:9px;color:#555;margin-bottom:4px;">Screens</div>
+    <div style="font-size:9px;color:#888;">① Stock List</div>
+    <div style="font-size:9px;color:#888;">② Operations Hub</div>
+    <div style="font-size:9px;color:#888;">③ Area History</div>
+    <div style="font-size:9px;color:#888;">④ Delivery List</div>
+    <div style="font-size:9px;color:#888;">⑤ Delivery Detail</div>
+    <div style="font-size:9px;color:#888;">⑥ Receipts List</div>
+    <div style="font-size:9px;color:#888;">⑦ Operation Form</div>
+    <div style="font-size:9px;color:#888;">⑧ Lot/Serial Form</div>
+    <div style="font-size:9px;color:#888;">⑨ Membership Config</div>
+  </div>
+</div>
+
+</div><!-- /canvas -->
+</body>
+</html>
