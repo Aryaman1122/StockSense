@@ -3,3 +3,5 @@ node_modules/
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+venv/
+__pycache__/
